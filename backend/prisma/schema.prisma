@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum OrderStatus {
+  PENDING
+  DISPATCHED
+  DELIVERED
+  RETURNED
+  CANCELLED
+}
+
+enum ShippingMethod {
+  PO
+  COD
+  SPEED
+}
+
+model User {
+  id            String      @id @default(uuid())
+  name          String
+  email         String      @unique
+  password_hash String
+  role          Role        @default(STAFF)
+  created_at    DateTime    @default(now())
+  
+  orders        Order[]     @relation("CreatedOrders")
+  audit_logs    AuditLog[]
+
+  @@map("users")
+}
+
+model Product {
+  id                    String      @id @default(uuid())
+  name                  String
+  cost_price            Decimal
+  default_selling_price Decimal?
+  created_at           DateTime    @default(now())
+  updated_at           DateTime    @updatedAt // Fixed spacing or just updated
+
+  order_items           OrderItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id                  String         @id
+  customer_name       String
+  mobile_number       String
+  address             String
+  order_date          DateTime       @default(now())
+  status              OrderStatus    @default(PENDING)
+  shipping_method     ShippingMethod
+  shipping_cost       Decimal
+  total_selling_price Decimal
+  total_cost_price    Decimal
+  net_profit          Decimal
+  
+  created_by_id       String
+  created_by          User           @relation("CreatedOrders", fields: [created_by_id], references: [id])
+  
+  created_at          DateTime       @default(now())
+  updated_at          DateTime       @updatedAt
+  
+  items               OrderItem[]
+  
+  @@map("orders")
+}
+
+model OrderItem {
+  id               String   @id @default(uuid())
+  order_id         String
+  order            Order    @relation(fields: [order_id], references: [id])
+  
+  product_id       String
+  product          Product  @relation(fields: [product_id], references: [id])
+  
+  product_name     String   // Snapshot
+  quantity         Int
+  cost_price       Decimal  // Snapshot
+  selling_price    Decimal  // Snapshot
+  total_item_value Decimal
+  
+  @@map("order_items")
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  user_id        String
+  user           User     @relation(fields: [user_id], references: [id])
+  
+  action         String
+  target_id      String
+  previous_value Json?
+  new_value      Json?
+  timestamp      DateTime @default(now())
+  
+  @@map("audit_logs")
+}
