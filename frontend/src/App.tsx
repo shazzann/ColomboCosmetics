@@ -4,6 +4,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 
+import Products from './pages/Products';
+
 function App() {
   return (
     <Router>
@@ -13,6 +15,7 @@ function App() {
 
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/products" element={<Products />} />
             {/* Add more protected routes here */}
           </Route>
 

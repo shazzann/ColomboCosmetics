@@ -1,5 +1,6 @@
 import { useAuth } from '../context/AuthContext';
 import { LogOut } from 'lucide-react';
+import BottomNav from '../components/BottomNav';
 
 const Dashboard = () => {
     const { user, logout } = useAuth();
@@ -48,6 +49,8 @@ const Dashboard = () => {
                     </div>
                 ))}
             </div>
+
+            <BottomNav />
         </div>
     );
 };

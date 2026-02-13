@@ -6,13 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.login = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const client_1 = __importDefault(require("../db/client"));
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
 const login = async (req, res) => {
     const { email, password } = req.body;
     try {
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await client_1.default.user.findUnique({ where: { email } });
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
