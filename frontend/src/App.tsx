@@ -6,10 +6,25 @@ import Dashboard from './pages/Dashboard';
 
 import Products from './pages/Products';
 
+import { Toaster } from 'react-hot-toast';
+
 function App() {
   return (
     <Router>
       <AuthProvider>
+        <Toaster position="top-right" toastOptions={{
+          style: {
+            background: '#333',
+            color: '#fff',
+            borderRadius: '12px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#F472B6',
+              secondary: '#fff',
+            },
+          },
+        }} />
         <Routes>
           <Route path="/login" element={<Login />} />
 

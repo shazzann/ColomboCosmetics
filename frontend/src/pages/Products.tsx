@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Trash2, PenLine } from 'lucide-react';
+import { Plus, Search, Trash2, PenLine, PackageX } from 'lucide-react';
+import toast from 'react-hot-toast';
 import api from '../api/client';
 import BottomNav from '../components/BottomNav';
+import Skeleton from '../components/ui/Skeleton';
+import Modal from '../components/ui/Modal';
+import EmptyState from '../components/ui/EmptyState';
 
 interface Product {
     id: string;
@@ -19,6 +23,8 @@ const Products = () => {
         default_selling_price: '',
     });
     const [isEditing, setIsEditing] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
     useEffect(() => {
         fetchProducts();
@@ -26,26 +32,36 @@ const Products = () => {
 
     const fetchProducts = async () => {
         try {
+            setIsLoading(true);
             const { data } = await api.get('/products');
             setProducts(data);
         } catch (error) {
             console.error('Error fetching products:', error);
+            toast.error('Failed to load products');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const loadingToast = toast.loading(isEditing ? 'Updating product...' : 'Creating product...');
         try {
             if (isEditing) {
                 await api.put(`/products/${isEditing}`, formData);
                 setIsEditing(null);
+                toast.success('Product updated successfully');
             } else {
                 await api.post('/products', formData);
+                toast.success('Product created successfully');
             }
             setFormData({ name: '', cost_price: '', default_selling_price: '' });
             fetchProducts();
         } catch (error) {
             console.error('Error saving product:', error);
+            toast.error('Failed to save product');
+        } finally {
+            toast.dismiss(loadingToast);
         }
     };
 
@@ -59,14 +75,23 @@ const Products = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleDelete = async (id: string) => {
-        if (confirm('Are you sure you want to delete this product?')) {
-            try {
-                await api.delete(`/products/${id}`);
-                fetchProducts();
-            } catch (error) {
-                console.error('Error deleting product:', error);
-            }
+    const handleDelete = (id: string) => {
+        setIsDeleting(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!isDeleting) return;
+        const loadingToast = toast.loading('Deleting product...');
+        try {
+            await api.delete(`/products/${isDeleting}`);
+            toast.success('Product deleted successfully');
+            fetchProducts();
+        } catch (error) {
+            console.error('Error deleting product:', error);
+            toast.error('Failed to delete product');
+        } finally {
+            toast.dismiss(loadingToast);
+            setIsDeleting(null);
         }
     };
 
@@ -186,43 +211,74 @@ const Products = () => {
 
                 {/* Product List */}
                 <div className="space-y-4">
-                    {filteredProducts.map((product) => (
-                        <div key={product.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-50 flex justify-between items-center group hover:shadow-md transition-shadow">
-                            <div className="space-y-1">
-                                <h3 className="font-serif font-bold text-gray-800 text-lg">{product.name}</h3>
-                                <div className="flex space-x-4 text-xs font-bold tracking-wide">
-                                    <span className="text-gray-400">
-                                        WHOLESALE: <span className="text-gray-600">${Number(product.cost_price).toFixed(2)}</span>
-                                    </span>
-                                    <span className="text-gray-400">
-                                        RETAIL: <span className="text-pink-500">${Number(product.default_selling_price || 0).toFixed(2)}</span>
-                                    </span>
+                    {isLoading ? (
+                        // Skeletons
+                        [1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-2xl" />)
+                    ) : filteredProducts.length === 0 ? (
+                        <EmptyState
+                            icon={PackageX}
+                            title="No products found"
+                            description="Start by adding your first product using the form above."
+                        />
+                    ) : (
+                        filteredProducts.map((product) => (
+                            <div key={product.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-50 flex justify-between items-center group hover:shadow-md transition-shadow animate-scale-in">
+                                <div className="space-y-1">
+                                    <h3 className="font-serif font-bold text-gray-800 text-lg">{product.name}</h3>
+                                    <div className="flex space-x-4 text-xs font-bold tracking-wide">
+                                        <span className="text-gray-400">
+                                            WHOLESALE: <span className="text-gray-600">${Number(product.cost_price).toFixed(2)}</span>
+                                        </span>
+                                        <span className="text-gray-400">
+                                            RETAIL: <span className="text-pink-500">${Number(product.default_selling_price || 0).toFixed(2)}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="flex space-x-2">
+                                    <button
+                                        onClick={() => handleEdit(product)}
+                                        className="w-9 h-9 flex items-center justify-center bg-gray-50 rounded-full text-gray-400 hover:bg-pink-50 hover:text-pink-500 transition-colors"
+                                    >
+                                        <PenLine size={16} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(product.id)}
+                                        className="w-9 h-9 flex items-center justify-center bg-gray-50 rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
                                 </div>
                             </div>
-                            <div className="flex space-x-2">
-                                <button
-                                    onClick={() => handleEdit(product)}
-                                    className="w-9 h-9 flex items-center justify-center bg-gray-50 rounded-full text-gray-400 hover:bg-pink-50 hover:text-pink-500 transition-colors"
-                                >
-                                    <PenLine size={16} />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(product.id)}
-                                    className="w-9 h-9 flex items-center justify-center bg-gray-50 rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-
-                    {filteredProducts.length === 0 && (
-                        <div className="text-center py-10 text-gray-400">
-                            No products found. Add one above!
-                        </div>
+                        ))
                     )}
                 </div>
             </div>
+
+            <Modal
+                isOpen={!!isDeleting}
+                onClose={() => setIsDeleting(null)}
+                title="Confirm Deletion"
+            >
+                <div className="space-y-4">
+                    <p className="text-gray-600">
+                        Are you sure you want to delete this product? This action cannot be undone.
+                    </p>
+                    <div className="flex space-x-3 justify-end">
+                        <button
+                            onClick={() => setIsDeleting(null)}
+                            className="px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={confirmDelete}
+                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors shadow-lg shadow-red-200"
+                        >
+                            Delete Product
+                        </button>
+                    </div>
+                </div>
+            </Modal>
 
             <BottomNav />
         </div>
