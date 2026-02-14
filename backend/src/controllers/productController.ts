@@ -3,7 +3,21 @@ import prisma from '../db/client';
 
 export const getProducts = async (req: Request, res: Response) => {
     try {
+        const { search, limit } = req.query;
+        const where: any = {};
+
+        if (search) {
+            where.name = {
+                contains: String(search),
+                mode: 'insensitive',
+            };
+        }
+
+        const take = limit ? Number(limit) : undefined;
+
         const products = await prisma.product.findMany({
+            where,
+            take,
             orderBy: { created_at: 'desc' },
         });
         res.json(products);

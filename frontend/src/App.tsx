@@ -3,9 +3,11 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-
 import Products from './pages/Products';
-
+import Orders from './pages/Orders';
+import CreateOrder from './pages/CreateOrder';
+import OrderDetails from './pages/OrderDetails';
+import Receipt from './pages/Receipt';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -31,6 +33,10 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/products" element={<Products />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/orders/new" element={<CreateOrder />} />
+            <Route path="/orders/:id" element={<OrderDetails />} />
+            <Route path="/orders/:id/print" element={<Receipt />} />
             {/* Add more protected routes here */}
           </Route>
 

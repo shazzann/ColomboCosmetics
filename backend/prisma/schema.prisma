@@ -19,11 +19,7 @@ enum OrderStatus {
   CANCELLED
 }
 
-enum ShippingMethod {
-  PO
-  COD
-  SPEED
-}
+
 
 model User {
   id            String      @id @default(uuid())
@@ -59,11 +55,12 @@ model Order {
   address             String
   order_date          DateTime       @default(now())
   status              OrderStatus    @default(PENDING)
-  shipping_method     ShippingMethod
+  shipping_method     String
   shipping_cost       Decimal
   total_selling_price Decimal
   total_cost_price    Decimal
   net_profit          Decimal
+  notes               String?
   
   created_by_id       String
   created_by          User           @relation("CreatedOrders", fields: [created_by_id], references: [id])
@@ -81,8 +78,8 @@ model OrderItem {
   order_id         String
   order            Order    @relation(fields: [order_id], references: [id])
   
-  product_id       String
-  product          Product  @relation(fields: [product_id], references: [id])
+  product_id       String?
+  product          Product? @relation(fields: [product_id], references: [id])
   
   product_name     String   // Snapshot
   quantity         Int
