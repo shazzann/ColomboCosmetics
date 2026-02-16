@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getOrderById = exports.getOrderStats = exports.updateOrderStatus = exports.getOrders = exports.createOrder = void 0;
+exports.updateOrder = exports.getOrderById = exports.getOrderStats = exports.updateOrderStatus = exports.getOrders = exports.createOrder = void 0;
 const client_1 = __importDefault(require("../db/client"));
 const client_2 = require("@prisma/client");
 const createOrder = async (req, res) => {
@@ -35,7 +35,8 @@ const createOrder = async (req, res) => {
             });
         }
         const shippingCostNum = Number(shipping_cost || 0);
-        const net_profit = total_selling_price - total_cost_price - shippingCostNum;
+        // Profit = Selling - Cost (Shipping income cancels out shipping expense)
+        const net_profit = total_selling_price - total_cost_price;
         // Use a transaction to create order and items
         const newOrder = await client_1.default.$transaction(async (tx) => {
             // Generate a simple readable ID (e.g., ORD-timestamp-random) or let UUID handle it.
@@ -46,24 +47,27 @@ const createOrder = async (req, res) => {
             const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
             const randomSuffix = Math.floor(1000 + Math.random() * 9000);
             const orderId = `ORD-${dateStr}-${randomSuffix}`;
+            const orderData = {
+                id: orderId,
+                customer_name,
+                mobile_number,
+                address,
+                shipping_method: shipping_method,
+                shipping_cost: shippingCostNum,
+                total_selling_price,
+                total_cost_price,
+                net_profit,
+                status: client_2.OrderStatus.PENDING,
+                created_by_id: userId,
+                items: {
+                    create: orderItemsData
+                }
+            };
+            if (notes) {
+                orderData.notes = String(notes);
+            }
             const order = await tx.order.create({
-                data: {
-                    id: orderId,
-                    customer_name,
-                    mobile_number,
-                    address,
-                    shipping_method: shipping_method,
-                    shipping_cost: shippingCostNum,
-                    total_selling_price,
-                    total_cost_price,
-                    net_profit,
-                    status: client_2.OrderStatus.PENDING,
-                    notes: notes ? String(notes) : null,
-                    created_by_id: userId,
-                    items: {
-                        create: orderItemsData
-                    }
-                },
+                data: orderData,
                 include: {
                     items: true
                 }
@@ -80,7 +84,7 @@ const createOrder = async (req, res) => {
 exports.createOrder = createOrder;
 const getOrders = async (req, res) => {
     try {
-        const { status, search, startDate, endDate, page = 1, limit = 20 } = req.query;
+        const { status, search, startDate, endDate, shipping_method, page = 1, limit = 20 } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
         const where = {};
         if (status && status !== 'ALL') {
@@ -88,19 +92,28 @@ const getOrders = async (req, res) => {
         }
         if (startDate && endDate) {
             where.created_at = {
-                gte: new Date(String(startDate)),
-                lte: new Date(String(endDate))
+                gte: new Date(String(startDate) + 'T00:00:00.000Z'),
+                lte: new Date(String(endDate) + 'T23:59:59.999Z')
             };
+        }
+        else if (startDate) {
+            where.created_at = {
+                gte: new Date(String(startDate) + 'T00:00:00.000Z')
+            };
+        }
+        if (shipping_method && shipping_method !== 'ALL') {
+            where.shipping_method = String(shipping_method);
         }
         if (search) {
             const searchStr = String(search);
             where.OR = [
                 { customer_name: { contains: searchStr, mode: 'insensitive' } },
                 { mobile_number: { contains: searchStr, mode: 'insensitive' } },
-                { id: { contains: searchStr, mode: 'insensitive' } }
+                { id: { contains: searchStr, mode: 'insensitive' } },
+                { address: { contains: searchStr, mode: 'insensitive' } }
             ];
         }
-        const [orders, total] = await client_1.default.$transaction([
+        const [orders, total, stats] = await client_1.default.$transaction([
             client_1.default.order.findMany({
                 where,
                 include: { items: true },
@@ -108,13 +121,24 @@ const getOrders = async (req, res) => {
                 skip,
                 take: Number(limit)
             }),
-            client_1.default.order.count({ where })
+            client_1.default.order.count({ where }),
+            client_1.default.order.aggregate({
+                where,
+                _sum: {
+                    total_selling_price: true,
+                    net_profit: true
+                }
+            })
         ]);
         res.json({
             orders,
             total,
             page: Number(page),
-            totalPages: Math.ceil(total / Number(limit))
+            totalPages: Math.ceil(total / Number(limit)),
+            stats: {
+                totalSales: Number(stats._sum.total_selling_price) || 0,
+                totalProfit: Number(stats._sum.net_profit) || 0
+            }
         });
     }
     catch (error) {
@@ -132,9 +156,15 @@ const updateOrderStatus = async (req, res) => {
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
+        const newProfit = status === client_2.OrderStatus.RETURNED
+            ? -Number(order.shipping_cost)
+            : Number(order.total_selling_price) - Number(order.total_cost_price);
         const updatedOrder = await client_1.default.order.update({
             where: { id },
-            data: { status: status }
+            data: {
+                status: status,
+                net_profit: newProfit
+            }
         });
         // Create audit log
         await client_1.default.auditLog.create({
@@ -142,8 +172,8 @@ const updateOrderStatus = async (req, res) => {
                 user_id: userId,
                 action: 'UPDATE_ORDER_STATUS',
                 target_id: id,
-                previous_value: { status: order.status },
-                new_value: { status: status }
+                previous_value: { status: order.status, net_profit: order.net_profit },
+                new_value: { status: status, net_profit: newProfit }
             }
         });
         res.json(updatedOrder);
@@ -210,3 +240,93 @@ const getOrderById = async (req, res) => {
     }
 };
 exports.getOrderById = getOrderById;
+const updateOrder = async (req, res) => {
+    try {
+        const id = String(req.params.id);
+        const { customer_name, mobile_number, address, shipping_method, shipping_cost, notes, items } = req.body;
+        const userId = req.user?.userId;
+        // 1. Fetch existing order to check status
+        const existingOrder = await client_1.default.order.findUnique({
+            where: { id },
+            include: { items: true }
+        });
+        if (!existingOrder) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+        if (existingOrder.status !== client_2.OrderStatus.PENDING) {
+            return res.status(400).json({ message: 'Only PENDING orders can be edited' });
+        }
+        if (!items || items.length === 0) {
+            return res.status(400).json({ message: 'Order must contain at least one item' });
+        }
+        // 2. Recalculate Totals (Logic mirrored from createOrder)
+        let total_selling_price = 0;
+        let total_cost_price = 0;
+        const orderItemsData = [];
+        for (const item of items) {
+            const itemCost = Number(item.cost_price);
+            const itemSelling = Number(item.selling_price);
+            const quantity = Number(item.quantity);
+            const totalItemValue = itemSelling * quantity;
+            const totalItemCost = itemCost * quantity;
+            total_selling_price += totalItemValue;
+            total_cost_price += totalItemCost;
+            orderItemsData.push({
+                product_id: item.productId || item.product_id || null, // Handle both formats
+                product_name: item.name || item.product_name,
+                quantity: quantity,
+                cost_price: itemCost,
+                selling_price: itemSelling,
+                total_item_value: totalItemValue
+            });
+        }
+        const shippingCostNum = Number(shipping_cost || 0);
+        const net_profit = total_selling_price - total_cost_price;
+        // 3. Transaction: Update Order & Replace Items
+        const updatedOrder = await client_1.default.$transaction(async (tx) => {
+            // Delete existing items
+            await tx.orderItem.deleteMany({
+                where: { order_id: id }
+            });
+            // Update Order Details
+            const order = await tx.order.update({
+                where: { id },
+                data: {
+                    customer_name,
+                    mobile_number,
+                    address,
+                    shipping_method,
+                    shipping_cost: shippingCostNum,
+                    notes: notes ? String(notes) : null,
+                    total_selling_price,
+                    total_cost_price,
+                    net_profit,
+                    // updated_at is auto-handled by Prisma
+                    items: {
+                        create: orderItemsData
+                    }
+                },
+                include: {
+                    items: true
+                }
+            });
+            // Create Audit Log
+            await tx.auditLog.create({
+                data: {
+                    user_id: userId,
+                    action: 'EDIT_ORDER',
+                    target_id: id,
+                    previous_value: existingOrder,
+                    new_value: order
+                }
+            });
+            return order;
+        });
+        res.json(updatedOrder);
+    }
+    catch (error) {
+        console.error('Error updating order:', error);
+        res.status(500).json({ message: 'Failed to update order' });
+    }
+};
+exports.updateOrder = updateOrder;

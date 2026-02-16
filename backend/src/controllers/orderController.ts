@@ -291,3 +291,127 @@ export const getOrderById = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Failed to fetch order' });
     }
 };
+
+export const updateOrder = async (req: Request, res: Response) => {
+    try {
+        const id = String(req.params.id);
+        const {
+            customer_name,
+            mobile_number,
+            address,
+            shipping_method,
+            shipping_cost,
+            notes,
+            items
+        } = req.body;
+
+        const userId = (req as any).user?.userId;
+
+        // 1. Fetch existing order to check status
+        const existingOrder = await prisma.order.findUnique({
+            where: { id },
+            include: { items: true }
+        });
+
+        if (!existingOrder) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        if (existingOrder.status !== OrderStatus.PENDING) {
+            return res.status(400).json({ message: 'Only PENDING orders can be edited' });
+        }
+
+        if (!items || items.length === 0) {
+            return res.status(400).json({ message: 'Order must contain at least one item' });
+        }
+
+        // 2. Recalculate Totals (Logic mirrored from createOrder)
+        let total_selling_price = 0;
+        let total_cost_price = 0;
+
+        interface OrderItemData {
+            product_id: string | null;
+            product_name: string;
+            quantity: number;
+            cost_price: number;
+            selling_price: number;
+            total_item_value: number;
+        }
+
+        const orderItemsData: OrderItemData[] = [];
+
+        for (const item of items) {
+            const itemCost = Number(item.cost_price);
+            const itemSelling = Number(item.selling_price);
+            const quantity = Number(item.quantity);
+
+            const totalItemValue = itemSelling * quantity;
+            const totalItemCost = itemCost * quantity;
+
+            total_selling_price += totalItemValue;
+            total_cost_price += totalItemCost;
+
+            orderItemsData.push({
+                product_id: item.productId || item.product_id || null, // Handle both formats
+                product_name: item.name || item.product_name,
+                quantity: quantity,
+                cost_price: itemCost,
+                selling_price: itemSelling,
+                total_item_value: totalItemValue
+            });
+        }
+
+        const shippingCostNum = Number(shipping_cost || 0);
+        const net_profit = total_selling_price - total_cost_price;
+
+        // 3. Transaction: Update Order & Replace Items
+        const updatedOrder = await prisma.$transaction(async (tx) => {
+            // Delete existing items
+            await tx.orderItem.deleteMany({
+                where: { order_id: id }
+            });
+
+            // Update Order Details
+            const order = await tx.order.update({
+                where: { id },
+                data: {
+                    customer_name,
+                    mobile_number,
+                    address,
+                    shipping_method,
+                    shipping_cost: shippingCostNum,
+                    notes: notes ? String(notes) : null,
+                    total_selling_price,
+                    total_cost_price,
+                    net_profit,
+                    // updated_at is auto-handled by Prisma
+                    items: {
+                        create: orderItemsData
+                    }
+                },
+                include: {
+                    items: true
+                }
+            });
+
+            // Create Audit Log
+            await tx.auditLog.create({
+                data: {
+                    user_id: userId,
+                    action: 'EDIT_ORDER',
+                    target_id: id,
+                    previous_value: existingOrder as any,
+                    new_value: order as any
+                }
+            });
+
+            return order;
+        });
+
+        res.json(updatedOrder);
+
+    } catch (error) {
+        console.error('Error updating order:', error);
+        res.status(500).json({ message: 'Failed to update order' });
+    }
+};

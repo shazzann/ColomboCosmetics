@@ -7,7 +7,18 @@ exports.deleteProduct = exports.updateProduct = exports.createProduct = exports.
 const client_1 = __importDefault(require("../db/client"));
 const getProducts = async (req, res) => {
     try {
+        const { search, limit } = req.query;
+        const where = {};
+        if (search) {
+            where.name = {
+                contains: String(search),
+                mode: 'insensitive',
+            };
+        }
+        const take = limit ? Number(limit) : undefined;
         const products = await client_1.default.product.findMany({
+            where,
+            take,
             orderBy: { created_at: 'desc' },
         });
         res.json(products);

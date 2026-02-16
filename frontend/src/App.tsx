@@ -8,6 +8,7 @@ import Orders from './pages/Orders';
 import CreateOrder from './pages/CreateOrder';
 import OrderDetails from './pages/OrderDetails';
 import Receipt from './pages/Receipt';
+import Reports from './pages/Reports';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
             <Route path="/orders/new" element={<CreateOrder />} />
             <Route path="/orders/:id" element={<OrderDetails />} />
             <Route path="/orders/:id/print" element={<Receipt />} />
+            <Route path="/reports" element={<Reports />} />
             {/* Add more protected routes here */}
           </Route>
 

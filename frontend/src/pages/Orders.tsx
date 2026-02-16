@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Bell, Plus, Truck, X, Calendar } from 'lucide-react';
+import { Search, Bell, Plus, Truck, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 import api from '../api/client';
