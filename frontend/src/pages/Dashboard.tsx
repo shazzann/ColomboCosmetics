@@ -58,7 +58,24 @@ const Dashboard = () => {
     };
 
     const fetchStats = async (startDate?: string, endDate?: string) => {
-        setLoading(true);
+        // Cache Key
+        const cacheKey = `dashboard_stats_${startDate || 'default'}_${endDate || 'default'}`;
+
+        // 1. Check Cache first
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+            try {
+                setStats(JSON.parse(cached));
+                setLoading(false);
+            } catch (e) {
+                console.error('Cache parse error', e);
+                sessionStorage.removeItem(cacheKey);
+                setLoading(true);
+            }
+        } else {
+            setLoading(true);
+        }
+
         try {
             const params: any = {};
             if (startDate && endDate) {
@@ -66,7 +83,10 @@ const Dashboard = () => {
                 params.endDate = endDate;
             }
             const { data } = await api.get('/orders/dashboard', { params });
+
+            // 2. Update State & Cache
             setStats(data);
+            sessionStorage.setItem(cacheKey, JSON.stringify(data));
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
         } finally {
@@ -152,13 +172,13 @@ const Dashboard = () => {
                         <h1 className="font-playfair text-3xl font-bold text-slate-900">Executive Summary</h1>
                         <p className="text-xs text-gray-400 mt-1">{currentDate}</p>
                     </div>
-                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#f53d87]/20 bg-white shadow-sm">
+                    {/* <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#f53d87]/20 bg-white shadow-sm">
                         <img
                             className="w-full h-full object-cover"
                             src="https://ui-avatars.com/api/?name=Admin&background=f53d87&color=fff"
                             alt="Profile"
                         />
-                    </div>
+                    </div> */}
                 </div>
 
                 <div className="flex items-center gap-3 relative" ref={filterRef}>
@@ -317,8 +337,8 @@ const Dashboard = () => {
                             <div className="mt-6 pt-6 border-t border-white/10 flex justify-between items-center">
                                 <div className="flex -space-x-2">
                                     {/* Placeholder avatars for staff */}
-                                    <div className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-700 flex items-center justify-center text-[10px]">JD</div>
-                                    <div className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-700 flex items-center justify-center text-[10px]">MS</div>
+                                    {/* <div className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-700 flex items-center justify-center text-[10px]">JD</div>
+                                    <div className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-700 flex items-center justify-center text-[10px]">MS</div> */}
                                 </div>
                                 <Link to="/orders" className="text-[#f53d87] text-sm font-bold flex items-center gap-1 hover:text-pink-400 transition-colors">
                                     View Details <ArrowRight size={14} />

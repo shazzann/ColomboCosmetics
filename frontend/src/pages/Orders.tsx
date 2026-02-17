@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Search, Bell, Plus, Truck, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
@@ -10,14 +10,24 @@ import Skeleton from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 
 const Orders = () => {
-    const location = useLocation();
-    const [activeTab, setActiveTab] = useState<OrderStatus | 'ALL'>('ALL');
-    const [orders, setOrders] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [search, setSearch] = useState('');
-    // const [stats, setStats] = useState({ totalSales: 0, totalProfit: 0 }); // Derived now
-    const [dateRange, setDateRange] = useState({ start: '', end: '' });
-    const [shippingMethod, setShippingMethod] = useState('ALL');
+
+    // Initialize state from sessionStorage if available
+    const [activeTab, setActiveTab] = useState<OrderStatus | 'ALL'>(() => {
+        return (sessionStorage.getItem('orders_activeTab') as any) || 'ALL';
+    });
+    const [orders, setOrders] = useState<any[]>(() => {
+        const saved = sessionStorage.getItem('orders_data');
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [isLoading, setIsLoading] = useState(() => {
+        return !sessionStorage.getItem('orders_data');
+    });
+    const [search, setSearch] = useState(() => sessionStorage.getItem('orders_search') || '');
+    const [dateRange, setDateRange] = useState(() => {
+        const saved = sessionStorage.getItem('orders_dateRange');
+        return saved ? JSON.parse(saved) : { start: '', end: '' };
+    });
+    const [shippingMethod, setShippingMethod] = useState(() => sessionStorage.getItem('orders_shippingMethod') || 'ALL');
     const [showCustomDate, setShowCustomDate] = useState(false);
 
     // Tabs configuration
@@ -30,37 +40,47 @@ const Orders = () => {
         { id: OrderStatus.CANCELLED, label: 'Cancelled' },
     ];
 
-    // Restore scroll position when returning to this page
+    // Persist state changes
     useEffect(() => {
-        const savedScrollPosition = sessionStorage.getItem('ordersScrollPosition');
-        if (savedScrollPosition) {
-            // Wait for content to load before scrolling
-            const scrollTimer = setTimeout(() => {
-                window.scrollTo(0, parseInt(savedScrollPosition));
-                sessionStorage.removeItem('ordersScrollPosition');
-            }, 75);
-            return () => clearTimeout(scrollTimer);
-        }
-    }, [location.key]);
+        sessionStorage.setItem('orders_activeTab', activeTab);
+        sessionStorage.setItem('orders_search', search);
+        sessionStorage.setItem('orders_dateRange', JSON.stringify(dateRange));
+        sessionStorage.setItem('orders_shippingMethod', shippingMethod);
+    }, [activeTab, search, dateRange, shippingMethod]);
 
-    // Save scroll position before navigating away
+    // Persist orders data whenever it changes
+    useEffect(() => {
+        if (orders.length > 0) {
+            sessionStorage.setItem('orders_data', JSON.stringify(orders));
+        }
+    }, [orders]);
+
+    // Scroll Logic
     useEffect(() => {
         const handleScroll = () => {
-            sessionStorage.setItem('ordersScrollPosition', window.scrollY.toString());
+            sessionStorage.setItem('orders_scrollY', window.scrollY.toString());
         };
-
         window.addEventListener('scroll', handleScroll);
+
+        // Restore scroll on mount if we have data
+        const savedScroll = sessionStorage.getItem('orders_scrollY');
+        if (savedScroll && orders.length > 0) {
+            // Immediate scroll restore
+            window.scrollTo(0, Number(savedScroll));
+        }
+
         return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    }, []); // Run once on mount
 
     useEffect(() => {
-        fetchOrders();
+        // Background fetch to update data
+        fetchOrders(false);
     }, [activeTab, dateRange, shippingMethod]);
 
     // Debounced search effect
     useEffect(() => {
         const timer = setTimeout(() => {
-            fetchOrders();
+            fetchOrders(false);
         }, 500);
         return () => clearTimeout(timer);
     }, [search]);
@@ -82,8 +102,8 @@ const Orders = () => {
         }
     };
 
-    const fetchOrders = async () => {
-        setIsLoading(true);
+    const fetchOrders = async (showLoading = true) => {
+        if (showLoading && orders.length === 0) setIsLoading(true);
         try {
             // Always fetch ALL orders (up to 1000) for current filters to enable client-side tab switching
             const params: any = {
@@ -102,7 +122,7 @@ const Orders = () => {
             // Backend stats are for ALL (filtered by date/search), but we calculate local stats based on tab
         } catch (error) {
             console.error('Error fetching orders:', error);
-            toast.error('Failed to load orders');
+            if (orders.length === 0) toast.error('Failed to load orders');
         } finally {
             setIsLoading(false);
         }
