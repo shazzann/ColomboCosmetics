@@ -1,6 +1,7 @@
 import { MapPin, Package, Eye, CheckCircle, Truck, RotateCcw, Printer } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export type OrderStatus = 'PENDING' | 'DISPATCHED' | 'DELIVERED' | 'RETURNED' | 'CANCELLED';
 
@@ -32,6 +33,7 @@ interface OrderCardProps {
 }
 
 const OrderCard = ({ order, onStatusUpdate }: OrderCardProps) => {
+    const { user } = useAuth();
 
     const getStatusStyles = (status: OrderStatus) => {
         switch (status) {
@@ -105,9 +107,11 @@ const OrderCard = ({ order, onStatusUpdate }: OrderCardProps) => {
                         <span className="text-xl font-bold text-gray-900">
                             {Number(order.total_selling_price).toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">LKR</span>
                         </span>
-                        <span className="text-lg font-bold text-emerald-500">
-                            +{Number(order.net_profit).toLocaleString()}
-                        </span>
+                        {user?.role === 'ADMIN' && (
+                            <span className={`text-lg font-bold ${Number(order.net_profit) < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                {Number(order.net_profit) > 0 ? '+' : ''}{Number(order.net_profit).toLocaleString()}
+                            </span>
+                        )}
                         <span className="text-[10px] text-gray-400">{getTimeText()}</span>
                     </div>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { Search, Bell, Plus, Truck, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -11,6 +12,7 @@ import EmptyState from '../components/ui/EmptyState';
 
 const Orders = () => {
 
+    const { user } = useAuth();
     // Initialize state from sessionStorage if available
     const [activeTab, setActiveTab] = useState<OrderStatus | 'ALL'>(() => {
         return (sessionStorage.getItem('orders_activeTab') as any) || 'ALL';
@@ -198,7 +200,51 @@ const Orders = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24 font-sans relative">
-            {/* ... (Custom Date Modal) */}
+            {/* Custom Date Modal */}
+            {showCustomDate && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900">Select Date Range</h3>
+                            <p className="text-sm text-gray-500">Filter orders by custom dates</p>
+                        </div>
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase">Start Date</label>
+                                <input
+                                    type="date"
+                                    value={dateRange.start}
+                                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                                    className="w-full mt-1 p-2 bg-gray-50 rounded-xl border border-gray-100 outline-none focus:ring-2 focus:ring-pink-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-400 uppercase">End Date</label>
+                                <input
+                                    type="date"
+                                    value={dateRange.end}
+                                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                                    className="w-full mt-1 p-2 bg-gray-50 rounded-xl border border-gray-100 outline-none focus:ring-2 focus:ring-pink-500"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={() => { setShowCustomDate(false); setDateRange({ start: '', end: '' }); }}
+                                className="flex-1 py-2 text-gray-600 font-bold hover:bg-gray-50 rounded-xl transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => setShowCustomDate(false)}
+                                className="flex-1 py-2 bg-pink-500 text-white font-bold rounded-xl hover:bg-pink-600 transition-colors shadow-lg shadow-pink-200"
+                            >
+                                Apply Filter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Header */}
             <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md pt-4 pb-2 px-4 border-b border-gray-100">
@@ -214,28 +260,30 @@ const Orders = () => {
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                    {activeTab !== OrderStatus.RETURNED && (
-                        <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Sales</p>
-                            <p className="text-lg font-extrabold text-gray-900 mt-0.5">LKR {Number(stats.totalSales).toLocaleString()}</p>
+                {/* Stats - Only for Admin */}
+                {user?.role === 'ADMIN' && (
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                        {activeTab !== OrderStatus.RETURNED && (
+                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Sales</p>
+                                <p className="text-lg font-extrabold text-gray-900 mt-0.5">LKR {Number(stats.totalSales).toLocaleString()}</p>
+                            </div>
+                        )}
+                        <div className={`bg-white p-3 rounded-xl border border-gray-100 shadow-sm ${activeTab === OrderStatus.RETURNED ? 'col-span-2' : ''}`}>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                {activeTab === OrderStatus.RETURNED ? 'Total Loss' : 'Total Profit'}
+                            </p>
+                            <p className={`text-lg font-extrabold mt-0.5 ${activeTab === OrderStatus.RETURNED || stats.totalProfit < 0
+                                ? 'text-red-500'
+                                : 'text-green-500'
+                                }`}>
+                                LKR {activeTab === OrderStatus.RETURNED
+                                    ? Math.abs(Number(stats.totalProfit)).toLocaleString()
+                                    : Number(stats.totalProfit).toLocaleString()}
+                            </p>
                         </div>
-                    )}
-                    <div className={`bg-white p-3 rounded-xl border border-gray-100 shadow-sm ${activeTab === OrderStatus.RETURNED ? 'col-span-2' : ''}`}>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                            {activeTab === OrderStatus.RETURNED ? 'Total Loss' : 'Total Profit'}
-                        </p>
-                        <p className={`text-lg font-extrabold mt-0.5 ${activeTab === OrderStatus.RETURNED || stats.totalProfit < 0
-                            ? 'text-red-500'
-                            : 'text-green-500'
-                            }`}>
-                            LKR {activeTab === OrderStatus.RETURNED
-                                ? Math.abs(Number(stats.totalProfit)).toLocaleString()
-                                : Number(stats.totalProfit).toLocaleString()}
-                        </p>
                     </div>
-                </div>
+                )}
 
                 {/* Search */}
                 <div className="relative mb-3">

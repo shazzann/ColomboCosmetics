@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateOrder = exports.getOrderById = exports.getOrderStats = exports.updateOrderStatus = exports.getOrders = exports.createOrder = void 0;
+exports.deleteOrder = exports.updateOrder = exports.getOrderById = exports.getOrderStats = exports.updateOrderStatus = exports.getOrders = exports.createOrder = void 0;
 const client_1 = __importDefault(require("../db/client"));
 const client_2 = require("@prisma/client");
 const createOrder = async (req, res) => {
@@ -82,7 +82,41 @@ const createOrder = async (req, res) => {
     }
 };
 exports.createOrder = createOrder;
+const checkAutoDelivery = async () => {
+    try {
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+        const ordersToUpdate = await client_1.default.order.findMany({
+            where: {
+                shipping_method: { equals: 'Speed Post' }, // Cast to any to bypass strict type check if schema mismatch
+                status: {
+                    in: [client_2.OrderStatus.PENDING, client_2.OrderStatus.DISPATCHED]
+                },
+                created_at: {
+                    lt: threeDaysAgo
+                }
+            }
+        });
+        if (ordersToUpdate.length > 0) {
+            console.log(`Auto-delivering ${ordersToUpdate.length} Speed Post orders...`);
+            // We can batch this since logic is simple (profit is already set correctly at creation)
+            await client_1.default.order.updateMany({
+                where: {
+                    id: { in: ordersToUpdate.map(o => o.id) }
+                },
+                data: {
+                    status: client_2.OrderStatus.DELIVERED
+                }
+            });
+        }
+    }
+    catch (error) {
+        console.error('Auto delivery check failed:', error);
+    }
+};
 const getOrders = async (req, res) => {
+    // Lazy check for auto-delivery
+    checkAutoDelivery().catch(err => console.error('Background auto-delivery error', err));
     try {
         const { status, search, startDate, endDate, shipping_method, page = 1, limit = 20 } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
@@ -156,13 +190,18 @@ const updateOrderStatus = async (req, res) => {
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
-        const newProfit = status === client_2.OrderStatus.RETURNED
+        let newStatus = status;
+        // Speed Post Logic: Skip DISPATCHED -> DELIVERED
+        if (newStatus === client_2.OrderStatus.DISPATCHED && order.shipping_method === 'Speed Post') {
+            newStatus = client_2.OrderStatus.DELIVERED;
+        }
+        const newProfit = newStatus === client_2.OrderStatus.RETURNED
             ? -Number(order.shipping_cost)
             : Number(order.total_selling_price) - Number(order.total_cost_price);
         const updatedOrder = await client_1.default.order.update({
             where: { id },
             data: {
-                status: status,
+                status: newStatus,
                 net_profit: newProfit
             }
         });
@@ -173,7 +212,7 @@ const updateOrderStatus = async (req, res) => {
                 action: 'UPDATE_ORDER_STATUS',
                 target_id: id,
                 previous_value: { status: order.status, net_profit: order.net_profit },
-                new_value: { status: status, net_profit: newProfit }
+                new_value: { status: newStatus, net_profit: newProfit }
             }
         });
         res.json(updatedOrder);
@@ -330,3 +369,32 @@ const updateOrder = async (req, res) => {
     }
 };
 exports.updateOrder = updateOrder;
+const deleteOrder = async (req, res) => {
+    try {
+        const id = String(req.params.id);
+        const userId = req.user?.userId;
+        // Transaction to delete items first, then order
+        await client_1.default.$transaction(async (tx) => {
+            await tx.orderItem.deleteMany({
+                where: { order_id: id }
+            });
+            await tx.auditLog.create({
+                data: {
+                    user_id: userId,
+                    action: 'DELETE_ORDER',
+                    target_id: id,
+                    previous_value: { id },
+                }
+            });
+            await tx.order.delete({
+                where: { id }
+            });
+        });
+        res.json({ message: 'Order deleted successfully' });
+    }
+    catch (error) {
+        console.error('Error deleting order:', error);
+        res.status(500).json({ message: 'Failed to delete order' });
+    }
+};
+exports.deleteOrder = deleteOrder;

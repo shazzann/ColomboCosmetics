@@ -1,15 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../api/client';
 import { format } from 'date-fns';
+import { MessageCircle } from 'lucide-react';
 
 const Receipt = () => {
     const { id } = useParams();
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const hasPrinted = useRef(false);
 
     useEffect(() => {
         const fetchOrder = async () => {
+            // ... existing fetch logic
             try {
                 const { data } = await api.get(`/orders/${id}`);
                 setOrder(data);
@@ -23,7 +26,8 @@ const Receipt = () => {
     }, [id]);
 
     useEffect(() => {
-        if (!loading && order) {
+        if (!loading && order && !hasPrinted.current) {
+            hasPrinted.current = true;
             // Auto-print when ready
             setTimeout(() => {
                 window.print();
@@ -37,6 +41,42 @@ const Receipt = () => {
     const subtotal = Number(order.total_selling_price);
     const shipping = Number(order.shipping_cost);
     const total = subtotal + shipping; // Total Bill to customer
+
+    const handleWhatsAppShare = () => {
+        if (!order) return;
+
+        const itemsList = order.items.map((item: any) =>
+            `- ${item.product_name || item.name} x ${item.quantity}: ${(Number(item.selling_price) * Number(item.quantity)).toFixed(2)}`
+        ).join('\n');
+
+        const message = `*COLOMBO COSMETICS*
+Order: #${order.id.slice(-6).toUpperCase()}
+Date: ${format(new Date(order.created_at), 'yyyy-MM-dd')}
+
+*Customer:*
+${order.customer_name}
+${order.address || ''}
+
+*Items:*
+${itemsList}
+
+Subtotal: ${subtotal.toFixed(2)}
+Shipping: ${shipping.toFixed(2)}
+*TOTAL: ${total.toFixed(2)}*
+
+Thank you for your order!`;
+
+        const encodedMessage = encodeURIComponent(message);
+        const phoneNumber = order.mobile_number.replace(/\D/g, ''); // Strip non-digits
+        // Default to no number (user picks contact) if invalid, or use specific format if needed
+        // wa.me/?text=... allows picking contact. wa.me/NUMBER?text=... pre-fills number.
+
+        const url = phoneNumber
+            ? `https://wa.me/${phoneNumber}?text=${encodedMessage}`
+            : `https://wa.me/?text=${encodedMessage}`;
+
+        window.open(url, '_blank');
+    };
 
     return (
         <div className="bg-white min-h-screen p-8 text-black font-mono text-sm max-w-[80mm] mx-auto print:max-w-none print:mx-0 print:p-0">
@@ -106,13 +146,21 @@ const Receipt = () => {
                 <p className="mt-4 text-[10px] text-gray-400">Inventory System Generated</p>
             </div>
 
-            {/* Print Button (Hidden in Print) */}
-            <button
-                onClick={() => window.print()}
-                className="mt-8 w-full bg-black text-white py-3 font-bold uppercase text-xs print:hidden hover:bg-gray-800"
-            >
-                Print Receipt
-            </button>
+            {/* Actions (Hidden in Print) */}
+            <div className="mt-8 space-y-3 print:hidden">
+                <button
+                    onClick={() => window.print()}
+                    className="w-full bg-black text-white py-3 font-bold uppercase text-xs hover:bg-gray-800 transition-colors"
+                >
+                    Print Receipt
+                </button>
+                <button
+                    onClick={handleWhatsAppShare}
+                    className="w-full bg-[#25D366] text-white py-3 font-bold uppercase text-xs hover:bg-[#20bd5a] transition-colors flex items-center justify-center gap-2"
+                >
+                    <MessageCircle size={16} /> Send to WhatsApp
+                </button>
+            </div>
         </div>
     );
 };

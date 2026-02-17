@@ -13,4 +13,5 @@ router.get('/stats', orderController_1.getOrderStats);
 router.get('/:id', orderController_1.getOrderById);
 router.put('/:id', orderController_1.updateOrder); // Edit Order Endpoint
 router.patch('/:id/status', orderController_1.updateOrderStatus);
+router.delete('/:id', (0, authMiddleware_1.authorizeRole)(['ADMIN']), orderController_1.deleteOrder);
 exports.default = router;

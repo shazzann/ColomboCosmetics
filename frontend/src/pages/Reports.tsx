@@ -94,13 +94,13 @@ const Reports = () => {
                             <Filter size={16} className="text-[#f53d87]" /> Report Type
                         </label>
                         <div className="grid grid-cols-2 gap-2">
-                            {['ALL', 'PENDING', 'DISPATCHED', 'DELIVERED', 'RETURNED'].map((type) => (
+                            {['ALL', 'DELIVERED', 'RETURNED'].map((type) => (
                                 <button
                                     key={type}
                                     onClick={() => setReportType(type)}
                                     className={`p-3 rounded-xl text-xs font-bold transition-all ${reportType === type
-                                            ? 'bg-[#f53d87] text-white shadow-lg shadow-[#f53d87]/20'
-                                            : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                                        ? 'bg-[#f53d87] text-white shadow-lg shadow-[#f53d87]/20'
+                                        : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
                                         }`}
                                 >
                                     {type === 'ALL' ? 'All Orders' : type.charAt(0) + type.slice(1).toLowerCase()}

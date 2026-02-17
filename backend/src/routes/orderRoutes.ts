@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrder, getOrders, getOrderStats, updateOrderStatus, getOrderById, updateOrder } from '../controllers/orderController';
+import { createOrder, getOrders, getOrderStats, updateOrderStatus, getOrderById, updateOrder, deleteOrder } from '../controllers/orderController';
 import { getDashboardStats } from '../controllers/dashboardController';
 import { authenticateToken, authorizeRole } from '../middleware/authMiddleware';
 
@@ -14,5 +14,6 @@ router.get('/stats', getOrderStats);
 router.get('/:id', getOrderById);
 router.put('/:id', updateOrder); // Edit Order Endpoint
 router.patch('/:id/status', updateOrderStatus);
+router.delete('/:id', authorizeRole(['ADMIN']), deleteOrder);
 
 export default router;

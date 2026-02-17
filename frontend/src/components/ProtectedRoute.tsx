@@ -1,14 +1,27 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = () => {
-    const { isAuthenticated, isLoading } = useAuth();
+interface ProtectedRouteProps {
+    allowedRoles?: string[];
+}
+
+const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
+    const { isAuthenticated, isLoading, user } = useAuth();
 
     if (isLoading) {
         return <div className="flex h-screen items-center justify-center">Loading...</div>;
     }
 
-    return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+    if (!isAuthenticated) {
+        return <Navigate to="/login" replace />;
+    }
+
+    if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+        // Redirect to a safe page if unauthorized (e.g., Orders)
+        return <Navigate to="/orders" replace />;
+    }
+
+    return <Outlet />;
 };
 
 export default ProtectedRoute;

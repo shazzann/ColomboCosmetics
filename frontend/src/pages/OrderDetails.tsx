@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, User, Truck, DollarSign, FileText, Edit2, Save, X, Plus, Minus, Trash2, Search, CheckCircle, RotateCcw } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { ArrowLeft, Package, User, Truck, DollarSign, FileText, Edit2, Save, X, Plus, Minus, Trash2, Search, CheckCircle, RotateCcw, MessageCircle } from 'lucide-react';
 // import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import api from '../api/client';
@@ -12,6 +13,7 @@ import { calculateShipping } from '../utils/shipping';
 const OrderDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [order, setOrder] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -106,6 +108,58 @@ const OrderDetails = () => {
             setOrder({ ...order, status: originalStatus });
             toast.error('Failed to update status', { id: toastId });
         }
+    };
+
+    const handleDeleteOrder = async () => {
+        if (!window.confirm('Are you sure you want to delete this order? This action cannot be undone.')) return;
+
+        const toastId = toast.loading('Deleting order...');
+        try {
+            await api.delete(`/orders/${id}`);
+            toast.success('Order deleted successfully', { id: toastId });
+            navigate('/orders');
+        } catch (error) {
+            console.error('Delete error:', error);
+            toast.error('Failed to delete order', { id: toastId });
+        }
+    };
+
+    const handleWhatsAppShare = () => {
+        if (!order) return;
+
+        const itemsList = order.items.map((item: any) =>
+            `- ${item.product_name || item.name} x ${item.quantity}: ${(Number(item.selling_price) * Number(item.quantity)).toFixed(2)}`
+        ).join('\n');
+
+        const subtotal = Number(order.total_selling_price);
+        const shipping = Number(order.shipping_cost);
+        const total = subtotal + shipping;
+
+        const message = `*COLOMBO COSMETICS*
+Order: #${order.id.slice(-6).toUpperCase()}
+Date: ${new Date(order.created_at).toISOString().split('T')[0]}
+
+*Customer:*
+${order.customer_name}
+${order.address || ''}
+
+*Items:*
+${itemsList}
+
+Subtotal: ${subtotal.toFixed(2)}
+Shipping: ${shipping.toFixed(2)}
+*TOTAL: ${total.toFixed(2)}*
+
+Thank you for your order!`;
+
+        const encodedMessage = encodeURIComponent(message);
+        const phoneNumber = order.mobile_number.replace(/\D/g, ''); // Strip non-digits
+
+        const url = phoneNumber
+            ? `https://wa.me/${phoneNumber}?text=${encodedMessage}`
+            : `https://wa.me/?text=${encodedMessage}`;
+
+        window.open(url, '_blank');
     };
 
     const getNextStatus = (current: OrderStatus): OrderStatus | null => {
@@ -213,17 +267,38 @@ const OrderDetails = () => {
                     </div>
                 </div>
 
-                {order.status === 'PENDING' && !isEditing && (
+                <div className="flex gap-2">
                     <button
-                        onClick={() => setIsEditing(true)}
-                        className="p-2 text-pink-500 hover:bg-pink-50 rounded-full transition-colors"
+                        onClick={handleWhatsAppShare}
+                        className="p-2 text-green-500 hover:bg-green-50 rounded-full transition-colors"
+                        title="Share on WhatsApp"
                     >
-                        <Edit2 size={20} />
+                        <MessageCircle size={20} />
                     </button>
-                )}
+
+                    {user?.role === 'ADMIN' && !isEditing && (
+                        <button
+                            onClick={handleDeleteOrder}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                            title="Delete Order"
+                        >
+                            <Trash2 size={20} />
+                        </button>
+                    )}
+
+                    {order.status === 'PENDING' && !isEditing && (
+                        <button
+                            onClick={() => setIsEditing(true)}
+                            className="p-2 text-pink-500 hover:bg-pink-50 rounded-full transition-colors"
+                        >
+                            <Edit2 size={20} />
+                        </button>
+                    )}
+                </div>
 
                 {isEditing && (
                     <div className="flex gap-2">
+                        {/* Delete moved to main header for always-access */}
                         <button onClick={() => { setIsEditing(false); setEditedOrder(JSON.parse(JSON.stringify(order))); }} className="p-2 text-gray-400 hover:text-gray-600">
                             <X size={20} />
                         </button>
@@ -326,6 +401,18 @@ const OrderDetails = () => {
                                             ) : (Number(item.selling_price).toFixed(2))}
                                         </span>
                                     </div>
+                                    {isEditing && (
+                                        <div className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                                            <span>Cost: $</span>
+                                            <input
+                                                type="number"
+                                                value={item.cost_price}
+                                                onChange={(e) => handleItemChange(idx, 'cost_price', e.target.value)}
+                                                className="w-14 bg-transparent border-b border-gray-200 text-left outline-none text-gray-500"
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="text-right pl-4">
                                     <p className="font-bold text-gray-900">${(Number(item.selling_price) * Number(item.quantity)).toFixed(2)}</p>

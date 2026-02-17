@@ -38,9 +38,10 @@ export const createOrder = async (req: Request, res: Response) => {
             cost_price: number;
             selling_price: number;
             total_item_value: number;
+            // Add implicit relations if needed, or rely on optionality
         }
 
-        const orderItemsData: OrderItemData[] = [];
+        const orderItemsData: any[] = [];
 
         // Calculate totals and prepare item data
         for (const item of items as OrderItemInput[]) {
@@ -118,7 +119,44 @@ export const createOrder = async (req: Request, res: Response) => {
     }
 };
 
+const checkAutoDelivery = async () => {
+    try {
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+        const ordersToUpdate = await prisma.order.findMany({
+            where: {
+                shipping_method: { equals: 'Speed Post' } as any, // Cast to any to bypass strict type check if schema mismatch
+                status: {
+                    in: [OrderStatus.PENDING, OrderStatus.DISPATCHED]
+                },
+                created_at: {
+                    lt: threeDaysAgo
+                }
+            }
+        });
+
+        if (ordersToUpdate.length > 0) {
+            console.log(`Auto-delivering ${ordersToUpdate.length} Speed Post orders...`);
+            // We can batch this since logic is simple (profit is already set correctly at creation)
+            await prisma.order.updateMany({
+                where: {
+                    id: { in: ordersToUpdate.map(o => o.id) }
+                },
+                data: {
+                    status: OrderStatus.DELIVERED
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Auto delivery check failed:', error);
+    }
+};
+
 export const getOrders = async (req: Request, res: Response) => {
+    // Lazy check for auto-delivery
+    checkAutoDelivery().catch(err => console.error('Background auto-delivery error', err));
+
     try {
         const { status, search, startDate, endDate, shipping_method, page = 1, limit = 20 } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
@@ -201,14 +239,21 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        const newProfit = status === OrderStatus.RETURNED
+        let newStatus = status as OrderStatus;
+
+        // Speed Post Logic: Skip DISPATCHED -> DELIVERED
+        if (newStatus === OrderStatus.DISPATCHED && (order.shipping_method as string) === 'Speed Post') {
+            newStatus = OrderStatus.DELIVERED;
+        }
+
+        const newProfit = newStatus === OrderStatus.RETURNED
             ? -Number(order.shipping_cost)
             : Number(order.total_selling_price) - Number(order.total_cost_price);
 
         const updatedOrder = await prisma.order.update({
             where: { id },
             data: {
-                status: status as OrderStatus,
+                status: newStatus,
                 net_profit: newProfit
             }
         });
@@ -220,7 +265,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
                 action: 'UPDATE_ORDER_STATUS',
                 target_id: id,
                 previous_value: { status: order.status, net_profit: order.net_profit },
-                new_value: { status: status, net_profit: newProfit }
+                new_value: { status: newStatus, net_profit: newProfit }
             }
         });
 
@@ -413,5 +458,37 @@ export const updateOrder = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error updating order:', error);
         res.status(500).json({ message: 'Failed to update order' });
+    }
+};
+
+export const deleteOrder = async (req: Request, res: Response) => {
+    try {
+        const id = String(req.params.id);
+        const userId = (req as any).user?.userId;
+
+        // Transaction to delete items first, then order
+        await prisma.$transaction(async (tx) => {
+            await tx.orderItem.deleteMany({
+                where: { order_id: id }
+            });
+
+            await tx.auditLog.create({
+                data: {
+                    user_id: userId,
+                    action: 'DELETE_ORDER',
+                    target_id: id,
+                    previous_value: { id },
+                }
+            });
+
+            await tx.order.delete({
+                where: { id }
+            });
+        });
+
+        res.json({ message: 'Order deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting order:', error);
+        res.status(500).json({ message: 'Failed to delete order' });
     }
 };

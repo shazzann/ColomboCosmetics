@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import Orders from './pages/Orders';
@@ -30,16 +31,21 @@ function App() {
         }} />
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
+          {/* General Protected Routes (Admin & Staff) */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/products" element={<Products />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/orders/new" element={<CreateOrder />} />
             <Route path="/orders/:id" element={<OrderDetails />} />
             <Route path="/orders/:id/print" element={<Receipt />} />
+            <Route path="/products" element={<Products />} />
+          </Route>
+
+          {/* Admin Only Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+            <Route path="/" element={<Dashboard />} />
             <Route path="/reports" element={<Reports />} />
-            {/* Add more protected routes here */}
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

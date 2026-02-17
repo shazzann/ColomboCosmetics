@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.login = void 0;
+exports.register = exports.login = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const client_1 = __importDefault(require("../db/client"));
@@ -28,3 +28,30 @@ const login = async (req, res) => {
     }
 };
 exports.login = login;
+const register = async (req, res) => {
+    const { email, password, name, role } = req.body;
+    try {
+        // Check if user exists
+        const existingUser = await client_1.default.user.findUnique({ where: { email } });
+        if (existingUser) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+        // Hash password
+        const hashedPassword = await bcryptjs_1.default.hash(password, 10);
+        // Create user
+        const user = await client_1.default.user.create({
+            data: {
+                email,
+                name,
+                password_hash: hashedPassword,
+                role: role || 'STAFF', // Default to STAFF
+            },
+        });
+        res.status(201).json({ message: `User ${user.email} created successfully`, user: { id: user.id, email: user.email, role: user.role } });
+    }
+    catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({ message: 'Server error during registration' });
+    }
+};
+exports.register = register;
