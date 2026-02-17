@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, Package, User, Truck, DollarSign, FileText, Edit2, Save, X, Plus, Minus, Trash2, Search, CheckCircle, RotateCcw, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Package, User, Truck, DollarSign, FileText, Edit2, Save, X, Plus, Minus, Trash2, Search, CheckCircle, RotateCcw, MessageCircle, StickyNote } from 'lucide-react';
 // import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import api from '../api/client';
@@ -277,13 +277,22 @@ Thank you for your order!`;
                     </button>
 
                     {user?.role === 'ADMIN' && !isEditing && (
-                        <button
-                            onClick={handleDeleteOrder}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                            title="Delete Order"
-                        >
-                            <Trash2 size={20} />
-                        </button>
+                        <>
+                            <button
+                                onClick={() => window.open(`/orders/${id}/label`, '_blank')}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                                title="Print Delivery Label"
+                            >
+                                <StickyNote size={20} />
+                            </button>
+                            <button
+                                onClick={handleDeleteOrder}
+                                className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                title="Delete Order"
+                            >
+                                <Trash2 size={20} />
+                            </button>
+                        </>
                     )}
 
                     {order.status === 'PENDING' && !isEditing && (

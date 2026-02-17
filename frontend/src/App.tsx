@@ -9,6 +9,7 @@ import Orders from './pages/Orders';
 import CreateOrder from './pages/CreateOrder';
 import OrderDetails from './pages/OrderDetails';
 import Receipt from './pages/Receipt';
+import DeliveryLabel from './pages/DeliveryLabel';
 import Reports from './pages/Reports';
 import { Toaster } from 'react-hot-toast';
 
@@ -39,6 +40,7 @@ function App() {
             <Route path="/orders/new" element={<CreateOrder />} />
             <Route path="/orders/:id" element={<OrderDetails />} />
             <Route path="/orders/:id/print" element={<Receipt />} />
+            <Route path="/orders/:id/label" element={<DeliveryLabel />} />
             <Route path="/products" element={<Products />} />
           </Route>
 
