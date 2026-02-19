@@ -142,7 +142,7 @@ const Login = () => {
                     </div>
                 </div>
                 <p className="text-[10px] text-gray-300 tracking-wide">
-                    © 2024 COLOMBO COSMETICS V2.4.0
+                    © 2026 COLOMBO COSMETICS V1.0.0
                 </p>
             </div>
         </div>
