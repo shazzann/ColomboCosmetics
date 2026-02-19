@@ -71,13 +71,10 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         });
 
         // Format status counts
-        const formattedStatusCounts = statusCounts.reduce<Record<OrderStatus, number>>(
-            (acc: Record<OrderStatus, number>, curr: { status: OrderStatus; _count: { id: number } }) => {
-                acc[curr.status] = curr._count.id;
-                return acc;
-            },
-            {} as Record<OrderStatus, number>
-        );
+        const formattedStatusCounts = statusCounts.reduce((acc: any, curr: any) => {
+            acc[curr.status] = curr._count.id;
+            return acc;
+        }, {}) as Record<OrderStatus, number>;
 
         res.json({
             totalSales: Number(totalSales._sum.total_selling_price) || 0,

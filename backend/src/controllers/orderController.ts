@@ -299,17 +299,14 @@ export const getOrderStats = async (req: Request, res: Response) => {
             }
         });
 
-        const formattedStats = stats.reduce<Record<string, { count: number; total: number; profit: number }>>(
-            (acc: Record<string, { count: number; total: number; profit: number }>, curr: { status: string; _count: { id: number }; _sum: { total_selling_price: any; net_profit: any } }) => {
+        const formattedStats = stats.reduce((acc: any, curr: any) => {
             acc[curr.status] = {
                 count: curr._count.id,
                 total: Number(curr._sum.total_selling_price) || 0,
                 profit: Number(curr._sum.net_profit) || 0
             };
             return acc;
-            },
-            {}
-        );
+        }, {}) as Record<string, { count: number; total: number; profit: number }>;
 
         const totals = await prisma.order.aggregate({
             _sum: {
