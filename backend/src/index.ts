@@ -8,6 +8,7 @@ import authRoutes from './routes/authRoutes';
 import productRoutes from './routes/productRoutes';
 import orderRoutes from './routes/orderRoutes';
 import reportRoutes from './routes/reportRoutes';
+import prisma from './db/client';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -26,4 +27,13 @@ app.get('/', (req, res) => {
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
+});
+
+app.get("/db-check", async (req, res) => {
+  try {
+    await prisma.user.findFirst();
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
