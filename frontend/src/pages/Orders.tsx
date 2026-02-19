@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { Search, Bell, Plus, Truck, Calendar } from 'lucide-react';
+import { Search, Plus, Truck, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 import api from '../api/client';

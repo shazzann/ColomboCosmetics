@@ -1,4 +1,4 @@
-import { LogOut, Info, Shield, HelpCircle } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
