@@ -8,8 +8,8 @@ COPY package*.json ./
 COPY tsconfig.json ./
 COPY prisma ./prisma
 
-# Install dependencies
-RUN npm ci --omit=dev
+# Install all dependencies (including dev for build tools)
+RUN npm ci
 
 # Generate Prisma client
 RUN npx prisma generate
