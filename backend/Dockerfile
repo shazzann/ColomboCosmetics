@@ -3,6 +3,9 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Install build dependencies including OpenSSL
+RUN apk add --no-cache openssl openssl-dev python3 make g++
+
 # Copy package files
 COPY package*.json ./
 COPY tsconfig.json ./
@@ -24,6 +27,9 @@ RUN npm run build
 FROM node:22-alpine
 
 WORKDIR /app
+
+# Install runtime OpenSSL dependency
+RUN apk add --no-cache openssl
 
 # Copy package files
 COPY package*.json ./
