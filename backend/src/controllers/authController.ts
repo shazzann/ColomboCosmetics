@@ -15,6 +15,10 @@ export const login = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
+        if (!user.is_approved) {
+            return res.status(403).json({ message: 'Account pending approval. Please contact admin.' });
+        }
+
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials' });

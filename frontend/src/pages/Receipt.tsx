@@ -27,10 +27,10 @@ const Receipt = () => {
 
     useEffect(() => {
         if (!loading && order && !hasPrinted.current) {
-            hasPrinted.current = true;
+            hasPrinted.current = false;
             // Auto-print when ready
             setTimeout(() => {
-                window.print();
+                //window.print();
             }, 500);
         }
     }, [loading, order]);

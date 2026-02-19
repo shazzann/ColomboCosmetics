@@ -115,25 +115,25 @@ const OrderCard = ({ order, onStatusUpdate }: OrderCardProps) => {
                         <span className="text-[10px] text-gray-400">{getTimeText()}</span>
                     </div>
 
-                    <div className="flex gap-1">
+                    <div className="flex gap-4 py-1">
                         <Link
                             to={`/orders/${order.id}`}
                             className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-pink-500 hover:bg-pink-50 rounded-lg transition-colors"
                             title="View Details"
                         >
-                            <Eye size={16} />
+                            <Eye size={20} />
                         </Link>
 
                         {nextStatus && (
                             <button
                                 onClick={() => onStatusUpdate(order, nextStatus)}
-                                className={`w-6 h-6 flex items-center justify-center rounded-lg transition-colors ${nextStatus === 'DISPATCHED'
+                                className={`w-6 h-6  flex items-center justify-center rounded-lg transition-colors ${nextStatus === 'DISPATCHED'
                                     ? 'text-gray-400 hover:text-sky-600 hover:bg-sky-50'
                                     : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
                                     }`}
                                 title={`Mark as ${nextStatus}`}
                             >
-                                {nextStatus === 'DISPATCHED' ? <Truck size={16} /> : <CheckCircle size={16} />}
+                                {nextStatus === 'DISPATCHED' ? <Truck size={20} /> : <CheckCircle size={16} />}
                             </button>
                         )}
 
@@ -143,7 +143,7 @@ const OrderCard = ({ order, onStatusUpdate }: OrderCardProps) => {
                                 className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
                                 title="Mark as Returned"
                             >
-                                <RotateCcw size={16} />
+                                <RotateCcw size={20} />
                             </button>
                         )}
 
@@ -153,7 +153,7 @@ const OrderCard = ({ order, onStatusUpdate }: OrderCardProps) => {
                             className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                             title="Print Receipt"
                         >
-                            <Printer size={16} />
+                            <Printer size={20} />
                         </Link>
                     </div>
                 </div>

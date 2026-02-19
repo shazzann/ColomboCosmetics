@@ -358,7 +358,7 @@ const CreateOrder = () => {
                         />
                         <input
                             type="text"
-                            placeholder="Phone Number"
+                            placeholder="Phone Number (77X-XXXXXX)"
                             value={orderDetails.mobile_number}
                             onChange={(e) => setOrderDetails({ ...orderDetails, mobile_number: e.target.value })}
                             className="w-full px-6 py-4 rounded-full bg-white shadow-sm border-none focus:ring-2 focus:ring-pink-100 font-medium text-gray-700 placeholder-gray-400 outline-none transition-shadow"

@@ -11,6 +11,7 @@ import OrderDetails from './pages/OrderDetails';
 import Receipt from './pages/Receipt';
 import DeliveryLabel from './pages/DeliveryLabel';
 import Reports from './pages/Reports';
+import Settings from './pages/Settings';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
             <Route path="/orders/:id/print" element={<Receipt />} />
             <Route path="/orders/:id/label" element={<DeliveryLabel />} />
             <Route path="/products" element={<Products />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
 
           {/* Admin Only Routes */}

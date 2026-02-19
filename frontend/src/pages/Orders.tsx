@@ -254,9 +254,9 @@ const Orders = () => {
                         <h1 className="text-xl font-extrabold tracking-tight text-gray-900">Order Management</h1>
                     </div>
                     <div className="flex gap-2">
-                        <button className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
+                        {/* <button className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
                             <Bell size={18} />
-                        </button>
+                        </button> */}
                     </div>
                 </div>
 
