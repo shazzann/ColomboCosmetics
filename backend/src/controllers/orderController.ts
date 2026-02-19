@@ -1,6 +1,15 @@
 import { Request, Response } from 'express';
 import prisma from '../db/client';
-import { OrderStatus } from '@prisma/client';
+
+const OrderStatus = {
+    PENDING: 'PENDING',
+    DISPATCHED: 'DISPATCHED',
+    DELIVERED: 'DELIVERED',
+    RETURNED: 'RETURNED',
+    CANCELLED: 'CANCELLED'
+} as const;
+
+type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
 
 interface OrderItemInput {
     productId?: string;
@@ -70,7 +79,7 @@ export const createOrder = async (req: Request, res: Response) => {
         const net_profit = total_selling_price - total_cost_price;
 
         // Use a transaction to create order and items
-        const newOrder = await prisma.$transaction(async (tx) => {
+        const newOrder = await prisma.$transaction(async (tx: any) => {
             // Generate a simple readable ID (e.g., ORD-timestamp-random) or let UUID handle it.
             // Schema says ID is String @id but not default uuid for Order? 
             // Checking schema... "id String @id". It does NOT say default(uuid).
@@ -124,7 +133,7 @@ const checkAutoDelivery = async () => {
         const threeDaysAgo = new Date();
         threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-        const ordersToUpdate = await prisma.order.findMany({
+        const ordersToUpdate: Array<{ id: string }> = await prisma.order.findMany({
             where: {
                 shipping_method: { equals: 'Speed Post' } as any, // Cast to any to bypass strict type check if schema mismatch
                 status: {
@@ -141,7 +150,7 @@ const checkAutoDelivery = async () => {
             // We can batch this since logic is simple (profit is already set correctly at creation)
             await prisma.order.updateMany({
                 where: {
-                    id: { in: ordersToUpdate.map(o => o.id) }
+                    id: { in: ordersToUpdate.map((o) => o.id) }
                 },
                 data: {
                     status: OrderStatus.DELIVERED
@@ -290,14 +299,17 @@ export const getOrderStats = async (req: Request, res: Response) => {
             }
         });
 
-        const formattedStats = stats.reduce((acc, curr) => {
+        const formattedStats = stats.reduce<Record<string, { count: number; total: number; profit: number }>>(
+            (acc: Record<string, { count: number; total: number; profit: number }>, curr: { status: string; _count: { id: number }; _sum: { total_selling_price: any; net_profit: any } }) => {
             acc[curr.status] = {
                 count: curr._count.id,
                 total: Number(curr._sum.total_selling_price) || 0,
                 profit: Number(curr._sum.net_profit) || 0
             };
             return acc;
-        }, {} as Record<string, { count: number, total: number, profit: number }>);
+            },
+            {}
+        );
 
         const totals = await prisma.order.aggregate({
             _sum: {
@@ -410,7 +422,7 @@ export const updateOrder = async (req: Request, res: Response) => {
         const net_profit = total_selling_price - total_cost_price;
 
         // 3. Transaction: Update Order & Replace Items
-        const updatedOrder = await prisma.$transaction(async (tx) => {
+        const updatedOrder = await prisma.$transaction(async (tx: any) => {
             // Delete existing items
             await tx.orderItem.deleteMany({
                 where: { order_id: id }
@@ -467,7 +479,7 @@ export const deleteOrder = async (req: Request, res: Response) => {
         const userId = (req as any).user?.userId;
 
         // Transaction to delete items first, then order
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: any) => {
             await tx.orderItem.deleteMany({
                 where: { order_id: id }
             });

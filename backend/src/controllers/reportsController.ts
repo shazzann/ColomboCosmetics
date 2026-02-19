@@ -1,8 +1,18 @@
 import { Request, Response } from 'express';
-import prisma from '../db/client';
-import { OrderStatus } from '@prisma/client';
 import { format } from 'date-fns';
 import { Parser } from 'json2csv';
+import prisma from '../db/client';
+
+const OrderStatus = {
+    PENDING: 'PENDING',
+    DISPATCHED: 'DISPATCHED',
+    DELIVERED: 'DELIVERED',
+    RETURNED: 'RETURNED',
+    CANCELLED: 'CANCELLED'
+} as const;
+
+type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
+type OrderWithItems = { items: Array<{ product_name: string; quantity: number }>; [key: string]: any };
 
 export const exportOrders = async (req: Request, res: Response) => {
     try {
@@ -30,15 +40,15 @@ export const exportOrders = async (req: Request, res: Response) => {
             include: {
                 items: true
             }
-        });
+        }) as OrderWithItems[];
 
         if (orders.length === 0) {
             return res.status(404).json({ message: 'No orders found for the selected criteria' });
         }
 
         // Format Data for CSV
-        const csvData = orders.map(order => {
-            const itemsSummary = order.items.map(item => `${item.product_name} (x${item.quantity})`).join(', ');
+        const csvData = orders.map((order: OrderWithItems) => {
+            const itemsSummary = order.items.map((item: { product_name: string; quantity: number }) => `${item.product_name} (x${item.quantity})`).join(', ');
 
             return {
                 'Order ID': order.id,

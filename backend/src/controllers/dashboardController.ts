@@ -1,6 +1,15 @@
 import { Request, Response } from 'express';
 import prisma from '../db/client';
-import { OrderStatus } from '@prisma/client';
+
+const OrderStatus = {
+    PENDING: 'PENDING',
+    DISPATCHED: 'DISPATCHED',
+    DELIVERED: 'DELIVERED',
+    RETURNED: 'RETURNED',
+    CANCELLED: 'CANCELLED'
+} as const;
+
+type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
 
 export const getDashboardStats = async (req: Request, res: Response) => {
     try {
@@ -62,10 +71,13 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         });
 
         // Format status counts
-        const formattedStatusCounts = statusCounts.reduce((acc, curr) => {
-            acc[curr.status] = curr._count.id;
-            return acc;
-        }, {} as Record<string, number>);
+        const formattedStatusCounts = statusCounts.reduce<Record<OrderStatus, number>>(
+            (acc: Record<OrderStatus, number>, curr: { status: OrderStatus; _count: { id: number } }) => {
+                acc[curr.status] = curr._count.id;
+                return acc;
+            },
+            {} as Record<OrderStatus, number>
+        );
 
         res.json({
             totalSales: Number(totalSales._sum.total_selling_price) || 0,

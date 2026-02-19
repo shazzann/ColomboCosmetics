@@ -4,9 +4,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.exportOrders = void 0;
-const client_1 = __importDefault(require("../db/client"));
 const date_fns_1 = require("date-fns");
 const json2csv_1 = require("json2csv");
+const client_1 = __importDefault(require("../db/client"));
+const OrderStatus = {
+    PENDING: 'PENDING',
+    DISPATCHED: 'DISPATCHED',
+    DELIVERED: 'DELIVERED',
+    RETURNED: 'RETURNED',
+    CANCELLED: 'CANCELLED'
+};
 const exportOrders = async (req, res) => {
     try {
         const { status, startDate, endDate } = req.query;
@@ -34,8 +41,8 @@ const exportOrders = async (req, res) => {
             return res.status(404).json({ message: 'No orders found for the selected criteria' });
         }
         // Format Data for CSV
-        const csvData = orders.map(order => {
-            const itemsSummary = order.items.map(item => `${item.product_name} (x${item.quantity})`).join(', ');
+        const csvData = orders.map((order) => {
+            const itemsSummary = order.items.map((item) => `${item.product_name} (x${item.quantity})`).join(', ');
             return {
                 'Order ID': order.id,
                 'Date': (0, date_fns_1.format)(new Date(order.created_at), 'yyyy-MM-dd HH:mm'),

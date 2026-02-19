@@ -5,7 +5,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteOrder = exports.updateOrder = exports.getOrderById = exports.getOrderStats = exports.updateOrderStatus = exports.getOrders = exports.createOrder = void 0;
 const client_1 = __importDefault(require("../db/client"));
-const client_2 = require("@prisma/client");
+const OrderStatus = {
+    PENDING: 'PENDING',
+    DISPATCHED: 'DISPATCHED',
+    DELIVERED: 'DELIVERED',
+    RETURNED: 'RETURNED',
+    CANCELLED: 'CANCELLED'
+};
 const createOrder = async (req, res) => {
     try {
         const { customer_name, mobile_number, address, shipping_method, shipping_cost, notes, items } = req.body;
@@ -57,7 +63,7 @@ const createOrder = async (req, res) => {
                 total_selling_price,
                 total_cost_price,
                 net_profit,
-                status: client_2.OrderStatus.PENDING,
+                status: OrderStatus.PENDING,
                 created_by_id: userId,
                 items: {
                     create: orderItemsData
@@ -90,7 +96,7 @@ const checkAutoDelivery = async () => {
             where: {
                 shipping_method: { equals: 'Speed Post' }, // Cast to any to bypass strict type check if schema mismatch
                 status: {
-                    in: [client_2.OrderStatus.PENDING, client_2.OrderStatus.DISPATCHED]
+                    in: [OrderStatus.PENDING, OrderStatus.DISPATCHED]
                 },
                 created_at: {
                     lt: threeDaysAgo
@@ -102,10 +108,10 @@ const checkAutoDelivery = async () => {
             // We can batch this since logic is simple (profit is already set correctly at creation)
             await client_1.default.order.updateMany({
                 where: {
-                    id: { in: ordersToUpdate.map(o => o.id) }
+                    id: { in: ordersToUpdate.map((o) => o.id) }
                 },
                 data: {
-                    status: client_2.OrderStatus.DELIVERED
+                    status: OrderStatus.DELIVERED
                 }
             });
         }
@@ -192,10 +198,10 @@ const updateOrderStatus = async (req, res) => {
         }
         let newStatus = status;
         // Speed Post Logic: Skip DISPATCHED -> DELIVERED
-        if (newStatus === client_2.OrderStatus.DISPATCHED && order.shipping_method === 'Speed Post') {
-            newStatus = client_2.OrderStatus.DELIVERED;
+        if (newStatus === OrderStatus.DISPATCHED && order.shipping_method === 'Speed Post') {
+            newStatus = OrderStatus.DELIVERED;
         }
-        const newProfit = newStatus === client_2.OrderStatus.RETURNED
+        const newProfit = newStatus === OrderStatus.RETURNED
             ? -Number(order.shipping_cost)
             : Number(order.total_selling_price) - Number(order.total_cost_price);
         const updatedOrder = await client_1.default.order.update({
@@ -292,7 +298,7 @@ const updateOrder = async (req, res) => {
         if (!existingOrder) {
             return res.status(404).json({ message: 'Order not found' });
         }
-        if (existingOrder.status !== client_2.OrderStatus.PENDING) {
+        if (existingOrder.status !== OrderStatus.PENDING) {
             return res.status(400).json({ message: 'Only PENDING orders can be edited' });
         }
         if (!items || items.length === 0) {
