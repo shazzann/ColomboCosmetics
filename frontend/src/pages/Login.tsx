@@ -99,9 +99,9 @@ const Login = () => {
                         </div>
                         <span>Remember me</span>
                     </label>
-                    <button type="button" className="text-pink-500 hover:text-pink-600 font-medium">
+                    {/* <button type="button" className="text-pink-500 hover:text-pink-600 font-medium">
                         Forgot Password?
-                    </button>
+                    </button> */}
                 </div>
 
                 <button

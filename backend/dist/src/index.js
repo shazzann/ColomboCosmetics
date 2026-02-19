@@ -11,6 +11,7 @@ const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const productRoutes_1 = __importDefault(require("./routes/productRoutes"));
 const orderRoutes_1 = __importDefault(require("./routes/orderRoutes"));
 const reportRoutes_1 = __importDefault(require("./routes/reportRoutes"));
+const client_1 = __importDefault(require("./db/client"));
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
 app.use((0, cors_1.default)());
@@ -24,4 +25,13 @@ app.get('/', (req, res) => {
 });
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
+});
+app.get("/db-check", async (req, res) => {
+    try {
+        await client_1.default.user.findFirst();
+        res.json({ ok: true });
+    }
+    catch (e) {
+        res.status(500).json({ ok: false, error: e.message });
+    }
 });

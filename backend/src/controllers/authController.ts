@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../db/client';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
+// Force restart for Prisma types
 
 export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
@@ -15,7 +16,7 @@ export const login = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        if (!user.is_approved) {
+        if (!(user as any).is_approved) {
             return res.status(403).json({ message: 'Account pending approval. Please contact admin.' });
         }
 
