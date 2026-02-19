@@ -30,6 +30,7 @@ model User {
   email         String      @unique
   password_hash String
   role          Role        @default(STAFF)
+  is_approved   Boolean     @default(false)
   created_at    DateTime    @default(now())
   
   orders        Order[]     @relation("CreatedOrders")
