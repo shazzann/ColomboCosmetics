@@ -9,13 +9,16 @@ import BottomNav from '../components/BottomNav';
 import OrderCard, { OrderStatus } from '../components/orders/OrderCard';
 import Skeleton from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
+import OrderedItemsTable from '../components/orders/OrderedItemsTable';
+
+type TabType = OrderStatus | 'ALL' | 'ORDERED_ITEMS';
 
 const Orders = () => {
 
     const { user } = useAuth();
     // Initialize state from sessionStorage if available
-    const [activeTab, setActiveTab] = useState<OrderStatus | 'ALL'>(() => {
-        return (sessionStorage.getItem('orders_activeTab') as any) || 'ALL';
+    const [activeTab, setActiveTab] = useState<TabType>(() => {
+        return (sessionStorage.getItem('orders_activeTab') as TabType) || 'ALL';
     });
     const [orders, setOrders] = useState<any[]>(() => {
         const saved = sessionStorage.getItem('orders_data');
@@ -29,6 +32,7 @@ const Orders = () => {
         const saved = sessionStorage.getItem('orders_dateRange');
         return saved ? JSON.parse(saved) : { start: '', end: '' };
     });
+    const [dateFilterType, setDateFilterType] = useState(() => sessionStorage.getItem('orders_dateFilterType') || 'all');
     const [shippingMethod, setShippingMethod] = useState(() => sessionStorage.getItem('orders_shippingMethod') || 'ALL');
     const [showCustomDate, setShowCustomDate] = useState(false);
 
@@ -40,7 +44,7 @@ const Orders = () => {
         { id: OrderStatus.DISPATCHED, label: 'Dispatched' },
         { id: OrderStatus.DELIVERED, label: 'Delivered' },
         { id: OrderStatus.RETURNED, label: 'Returned' },
-        { id: OrderStatus.CANCELLED, label: 'Cancelled' },
+        { id: 'ORDERED_ITEMS', label: 'Ordered Items' },
     ];
 
     // Persist state changes
@@ -48,8 +52,9 @@ const Orders = () => {
         sessionStorage.setItem('orders_activeTab', activeTab);
         sessionStorage.setItem('orders_search', search);
         sessionStorage.setItem('orders_dateRange', JSON.stringify(dateRange));
+        sessionStorage.setItem('orders_dateFilterType', dateFilterType);
         sessionStorage.setItem('orders_shippingMethod', shippingMethod);
-    }, [activeTab, search, dateRange, shippingMethod]);
+    }, [activeTab, search, dateRange, shippingMethod, dateFilterType]);
 
     // Persist orders data whenever it changes
     useEffect(() => {
@@ -89,6 +94,7 @@ const Orders = () => {
     }, [search]);
 
     const handleDateFilterChange = (value: string) => {
+        setDateFilterType(value);
         const today = new Date();
         if (value === 'all') {
             setDateRange({ start: '', end: '' });
@@ -133,7 +139,7 @@ const Orders = () => {
 
     // Client-side filtering for tabs
     const filteredOrders = orders.filter((order: any) => {
-        if (activeTab === 'ALL') return true;
+        if (activeTab === 'ALL' || activeTab === 'ORDERED_ITEMS') return true;
         return order.status === activeTab;
     });
 
@@ -231,7 +237,11 @@ const Orders = () => {
                         </div>
                         <div className="flex gap-3 pt-2">
                             <button
-                                onClick={() => { setShowCustomDate(false); setDateRange({ start: '', end: '' }); }}
+                                onClick={() => {
+                                    setShowCustomDate(false);
+                                    setDateRange({ start: '', end: '' });
+                                    setDateFilterType('all');
+                                }}
                                 className="flex-1 py-2 text-gray-600 font-bold hover:bg-gray-50 rounded-xl transition-colors"
                             >
                                 Cancel
@@ -262,7 +272,7 @@ const Orders = () => {
                 </div>
 
                 {/* Stats - Only for Admin */}
-                {user?.role === 'ADMIN' && (
+                {user?.role === 'ADMIN' && activeTab !== 'ORDERED_ITEMS' && (
                     <div className="grid grid-cols-2 gap-3 mb-4">
                         {activeTab !== OrderStatus.RETURNED && (
                             <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
@@ -305,7 +315,7 @@ const Orders = () => {
                             <select
                                 className="w-full bg-white border border-gray-200 rounded-lg py-2 pl-3 pr-8 text-xs font-semibold focus:ring-2 focus:ring-pink-500 outline-none appearance-none text-gray-700"
                                 onChange={(e) => handleDateFilterChange(e.target.value)}
-                                value={showCustomDate ? 'custom' : (dateRange.start ? 'custom' : 'all')}
+                                value={dateFilterType}
                             >
                                 <option value="all">All Dates</option>
                                 <option value="today">Today</option>
@@ -334,7 +344,7 @@ const Orders = () => {
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
+                                onClick={() => setActiveTab(tab.id as TabType)}
                                 className={`px-4 py-1.5 rounded-full text-[10px] font-bold whitespace-nowrap transition-all ${activeTab === tab.id
                                     ? 'bg-pink-500 text-white shadow-md shadow-pink-200'
                                     : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
@@ -348,7 +358,9 @@ const Orders = () => {
             </header>
 
             <main className="px-3 pb-32 pt-2 space-y-2">
-                {isLoading ? (
+                {activeTab === 'ORDERED_ITEMS' ? (
+                    <OrderedItemsTable orders={orders} dateRange={dateRange} />
+                ) : isLoading ? (
                     [1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)
                 ) : filteredOrders.length === 0 ? (
                     <EmptyState

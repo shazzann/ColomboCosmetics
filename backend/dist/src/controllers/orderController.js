@@ -5,14 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteOrder = exports.updateOrder = exports.getOrderById = exports.getOrderStats = exports.updateOrderStatus = exports.getOrders = exports.createOrder = void 0;
 const client_1 = __importDefault(require("../db/client"));
-const OrderStatus = {
-    DRAFT: 'DRAFT',
-    PENDING: 'PENDING',
-    DISPATCHED: 'DISPATCHED',
-    DELIVERED: 'DELIVERED',
-    RETURNED: 'RETURNED',
-    CANCELLED: 'CANCELLED'
-};
+const client_2 = require("@prisma/client");
 const createOrder = async (req, res) => {
     try {
         const { customer_name, mobile_number, address, shipping_method, shipping_cost, notes, items, status // Accept status property
@@ -64,7 +57,7 @@ const createOrder = async (req, res) => {
                 total_selling_price,
                 total_cost_price,
                 net_profit,
-                status: isDraft ? OrderStatus.DRAFT : OrderStatus.PENDING,
+                status: isDraft ? client_2.OrderStatus.DRAFT : client_2.OrderStatus.PENDING,
                 created_by_id: userId,
                 items: {
                     create: orderItemsData
@@ -97,7 +90,7 @@ const checkAutoDelivery = async () => {
             where: {
                 shipping_method: { equals: 'Speed Post' }, // Cast to any to bypass strict type check if schema mismatch
                 status: {
-                    in: [OrderStatus.PENDING, OrderStatus.DISPATCHED]
+                    in: [client_2.OrderStatus.PENDING, client_2.OrderStatus.DISPATCHED]
                 },
                 created_at: {
                     lt: threeDaysAgo
@@ -112,7 +105,7 @@ const checkAutoDelivery = async () => {
                     id: { in: ordersToUpdate.map((o) => o.id) }
                 },
                 data: {
-                    status: OrderStatus.DELIVERED
+                    status: client_2.OrderStatus.DELIVERED
                 }
             });
         }
@@ -199,10 +192,10 @@ const updateOrderStatus = async (req, res) => {
         }
         let newStatus = status;
         // Speed Post Logic: Skip DISPATCHED -> DELIVERED
-        if (newStatus === OrderStatus.DISPATCHED && order.shipping_method === 'Speed Post') {
-            newStatus = OrderStatus.DELIVERED;
+        if (newStatus === client_2.OrderStatus.DISPATCHED && order.shipping_method === 'Speed Post') {
+            newStatus = client_2.OrderStatus.DELIVERED;
         }
-        const newProfit = newStatus === OrderStatus.RETURNED
+        const newProfit = newStatus === client_2.OrderStatus.RETURNED
             ? -Number(order.shipping_cost)
             : Number(order.total_selling_price) - Number(order.total_cost_price);
         const updatedOrder = await client_1.default.order.update({
@@ -301,13 +294,13 @@ const updateOrder = async (req, res) => {
             return res.status(404).json({ message: 'Order not found' });
         }
         // Allow editing PENDING or DRAFT
-        if (existingOrder.status !== OrderStatus.PENDING && existingOrder.status !== OrderStatus.DRAFT) {
+        if (existingOrder.status !== client_2.OrderStatus.PENDING && existingOrder.status !== client_2.OrderStatus.DRAFT) {
             return res.status(400).json({ message: 'Only PENDING or DRAFT orders can be edited' });
         }
-        const isFinalizing = existingOrder.status === OrderStatus.DRAFT && status === OrderStatus.PENDING;
+        const isFinalizing = existingOrder.status === client_2.OrderStatus.DRAFT && status === client_2.OrderStatus.PENDING;
         const newStatus = status || existingOrder.status;
         // Validation: If Finalizing or staying Pending, requires items
-        if ((newStatus === OrderStatus.PENDING) && (!items || items.length === 0)) {
+        if ((newStatus === client_2.OrderStatus.PENDING) && (!items || items.length === 0)) {
             return res.status(400).json({ message: 'Order must contain at least one item to be finalized' });
         }
         // 2. Recalculate Totals (Logic mirrored from createOrder)

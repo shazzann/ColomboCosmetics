@@ -1,16 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../db/client';
 
-const OrderStatus = {
-    DRAFT: 'DRAFT',
-    PENDING: 'PENDING',
-    DISPATCHED: 'DISPATCHED',
-    DELIVERED: 'DELIVERED',
-    RETURNED: 'RETURNED',
-    CANCELLED: 'CANCELLED'
-} as const;
-
-type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
+import { OrderStatus as PrismaOrderStatus } from '@prisma/client';
 
 export const getDashboardStats = async (req: Request, res: Response) => {
     try {
@@ -32,7 +23,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         const totalSales = await prisma.order.aggregate({
             where: {
                 status: {
-                    notIn: [OrderStatus.RETURNED, OrderStatus.CANCELLED, OrderStatus.DRAFT]
+                    notIn: [PrismaOrderStatus.RETURNED, PrismaOrderStatus.CANCELLED, PrismaOrderStatus.DRAFT]
                 },
                 ...dateFilter
             },
@@ -46,7 +37,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             where: {
                 ...dateFilter,
                 status: {
-                    not: OrderStatus.DRAFT
+                    not: PrismaOrderStatus.DRAFT
                 }
             },
             _sum: {
@@ -67,7 +58,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         const outstandingRevenue = await prisma.order.aggregate({
             where: {
                 status: {
-                    in: [OrderStatus.PENDING, OrderStatus.DISPATCHED]
+                    in: [PrismaOrderStatus.PENDING, PrismaOrderStatus.DISPATCHED]
                 },
                 ...dateFilter
             },
@@ -80,18 +71,18 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         const formattedStatusCounts = statusCounts.reduce((acc: any, curr: any) => {
             acc[curr.status] = curr._count.id;
             return acc;
-        }, {}) as Record<OrderStatus, number>;
+        }, {}) as Record<PrismaOrderStatus, number>;
 
         res.json({
             totalSales: Number(totalSales._sum.total_selling_price) || 0,
             totalProfit: Number(totalProfit._sum.net_profit) || 0,
             statusCounts: {
-                DRAFT: formattedStatusCounts[OrderStatus.DRAFT] || 0,
-                PENDING: formattedStatusCounts[OrderStatus.PENDING] || 0,
-                DISPATCHED: formattedStatusCounts[OrderStatus.DISPATCHED] || 0,
-                DELIVERED: formattedStatusCounts[OrderStatus.DELIVERED] || 0,
-                RETURNED: formattedStatusCounts[OrderStatus.RETURNED] || 0,
-                CANCELLED: formattedStatusCounts[OrderStatus.CANCELLED] || 0,
+                DRAFT: formattedStatusCounts[PrismaOrderStatus.DRAFT] || 0,
+                PENDING: formattedStatusCounts[PrismaOrderStatus.PENDING] || 0,
+                DISPATCHED: formattedStatusCounts[PrismaOrderStatus.DISPATCHED] || 0,
+                DELIVERED: formattedStatusCounts[PrismaOrderStatus.DELIVERED] || 0,
+                RETURNED: formattedStatusCounts[PrismaOrderStatus.RETURNED] || 0,
+                CANCELLED: formattedStatusCounts[PrismaOrderStatus.CANCELLED] || 0,
             },
             outstandingRevenue: Number(outstandingRevenue._sum.total_selling_price) || 0
         });

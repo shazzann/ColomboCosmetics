@@ -1,16 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../db/client';
 
-const OrderStatus = {
-    DRAFT: 'DRAFT',
-    PENDING: 'PENDING',
-    DISPATCHED: 'DISPATCHED',
-    DELIVERED: 'DELIVERED',
-    RETURNED: 'RETURNED',
-    CANCELLED: 'CANCELLED'
-} as const;
-
-type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
+import { OrderStatus as PrismaOrderStatus } from '@prisma/client';
 
 interface OrderItemInput {
     productId?: string;
@@ -100,7 +91,7 @@ export const createOrder = async (req: Request, res: Response) => {
                 total_selling_price,
                 total_cost_price,
                 net_profit,
-                status: isDraft ? OrderStatus.DRAFT : OrderStatus.PENDING,
+                status: isDraft ? PrismaOrderStatus.DRAFT : PrismaOrderStatus.PENDING,
                 created_by_id: userId,
                 items: {
                     create: orderItemsData
@@ -138,7 +129,7 @@ const checkAutoDelivery = async () => {
             where: {
                 shipping_method: { equals: 'Speed Post' } as any, // Cast to any to bypass strict type check if schema mismatch
                 status: {
-                    in: [OrderStatus.PENDING, OrderStatus.DISPATCHED]
+                    in: [PrismaOrderStatus.PENDING, PrismaOrderStatus.DISPATCHED]
                 },
                 created_at: {
                     lt: threeDaysAgo
@@ -154,7 +145,7 @@ const checkAutoDelivery = async () => {
                     id: { in: ordersToUpdate.map((o) => o.id) }
                 },
                 data: {
-                    status: OrderStatus.DELIVERED
+                    status: PrismaOrderStatus.DELIVERED
                 }
             });
         }
@@ -174,7 +165,7 @@ export const getOrders = async (req: Request, res: Response) => {
         const where: any = {};
 
         if (status && status !== 'ALL') {
-            where.status = status as OrderStatus;
+            where.status = status as PrismaOrderStatus;
         }
 
         if (startDate && endDate) {
@@ -249,14 +240,14 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        let newStatus = status as OrderStatus;
+        let newStatus = status as PrismaOrderStatus;
 
         // Speed Post Logic: Skip DISPATCHED -> DELIVERED
-        if (newStatus === OrderStatus.DISPATCHED && (order.shipping_method as string) === 'Speed Post') {
-            newStatus = OrderStatus.DELIVERED;
+        if (newStatus === PrismaOrderStatus.DISPATCHED && (order.shipping_method as string) === 'Speed Post') {
+            newStatus = PrismaOrderStatus.DELIVERED;
         }
 
-        const newProfit = newStatus === OrderStatus.RETURNED
+        const newProfit = newStatus === PrismaOrderStatus.RETURNED
             ? -Number(order.shipping_cost)
             : Number(order.total_selling_price) - Number(order.total_cost_price);
 
@@ -374,15 +365,15 @@ export const updateOrder = async (req: Request, res: Response) => {
         }
 
         // Allow editing PENDING or DRAFT
-        if (existingOrder.status !== OrderStatus.PENDING && existingOrder.status !== OrderStatus.DRAFT) {
+        if (existingOrder.status !== PrismaOrderStatus.PENDING && existingOrder.status !== PrismaOrderStatus.DRAFT) {
             return res.status(400).json({ message: 'Only PENDING or DRAFT orders can be edited' });
         }
 
-        const isFinalizing = existingOrder.status === OrderStatus.DRAFT && status === OrderStatus.PENDING;
+        const isFinalizing = existingOrder.status === PrismaOrderStatus.DRAFT && status === PrismaOrderStatus.PENDING;
         const newStatus = status || existingOrder.status;
 
         // Validation: If Finalizing or staying Pending, requires items
-        if ((newStatus === OrderStatus.PENDING) && (!items || items.length === 0)) {
+        if ((newStatus === PrismaOrderStatus.PENDING) && (!items || items.length === 0)) {
             return res.status(400).json({ message: 'Order must contain at least one item to be finalized' });
         }
 

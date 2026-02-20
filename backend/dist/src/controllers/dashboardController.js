@@ -5,14 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDashboardStats = void 0;
 const client_1 = __importDefault(require("../db/client"));
-const OrderStatus = {
-    DRAFT: 'DRAFT',
-    PENDING: 'PENDING',
-    DISPATCHED: 'DISPATCHED',
-    DELIVERED: 'DELIVERED',
-    RETURNED: 'RETURNED',
-    CANCELLED: 'CANCELLED'
-};
+const client_2 = require("@prisma/client");
 const getDashboardStats = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
@@ -32,7 +25,7 @@ const getDashboardStats = async (req, res) => {
         const totalSales = await client_1.default.order.aggregate({
             where: {
                 status: {
-                    notIn: [OrderStatus.RETURNED, OrderStatus.CANCELLED, OrderStatus.DRAFT]
+                    notIn: [client_2.OrderStatus.RETURNED, client_2.OrderStatus.CANCELLED, client_2.OrderStatus.DRAFT]
                 },
                 ...dateFilter
             },
@@ -45,7 +38,7 @@ const getDashboardStats = async (req, res) => {
             where: {
                 ...dateFilter,
                 status: {
-                    not: OrderStatus.DRAFT
+                    not: client_2.OrderStatus.DRAFT
                 }
             },
             _sum: {
@@ -64,7 +57,7 @@ const getDashboardStats = async (req, res) => {
         const outstandingRevenue = await client_1.default.order.aggregate({
             where: {
                 status: {
-                    in: [OrderStatus.PENDING, OrderStatus.DISPATCHED]
+                    in: [client_2.OrderStatus.PENDING, client_2.OrderStatus.DISPATCHED]
                 },
                 ...dateFilter
             },
@@ -81,12 +74,12 @@ const getDashboardStats = async (req, res) => {
             totalSales: Number(totalSales._sum.total_selling_price) || 0,
             totalProfit: Number(totalProfit._sum.net_profit) || 0,
             statusCounts: {
-                DRAFT: formattedStatusCounts[OrderStatus.DRAFT] || 0,
-                PENDING: formattedStatusCounts[OrderStatus.PENDING] || 0,
-                DISPATCHED: formattedStatusCounts[OrderStatus.DISPATCHED] || 0,
-                DELIVERED: formattedStatusCounts[OrderStatus.DELIVERED] || 0,
-                RETURNED: formattedStatusCounts[OrderStatus.RETURNED] || 0,
-                CANCELLED: formattedStatusCounts[OrderStatus.CANCELLED] || 0,
+                DRAFT: formattedStatusCounts[client_2.OrderStatus.DRAFT] || 0,
+                PENDING: formattedStatusCounts[client_2.OrderStatus.PENDING] || 0,
+                DISPATCHED: formattedStatusCounts[client_2.OrderStatus.DISPATCHED] || 0,
+                DELIVERED: formattedStatusCounts[client_2.OrderStatus.DELIVERED] || 0,
+                RETURNED: formattedStatusCounts[client_2.OrderStatus.RETURNED] || 0,
+                CANCELLED: formattedStatusCounts[client_2.OrderStatus.CANCELLED] || 0,
             },
             outstandingRevenue: Number(outstandingRevenue._sum.total_selling_price) || 0
         });
