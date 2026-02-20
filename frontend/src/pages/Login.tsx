@@ -132,15 +132,15 @@ const Login = () => {
 
             {/* Footer */}
             <div className="absolute bottom-8 flex flex-col items-center space-y-4">
-                <div className="flex space-x-4">
-                    {/* Simple icon placeholders */}
+                {/* <div className="flex space-x-4">
+                    
                     <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-300">
                         L
                     </div>
                     <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-yellow-200">
                         k
                     </div>
-                </div>
+                </div> */}
                 <p className="text-[10px] text-gray-300 tracking-wide">
                     © 2026 COLOMBO COSMETICS V1.0.0
                 </p>
