@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../db/client';
 
 const OrderStatus = {
+    DRAFT: 'DRAFT',
     PENDING: 'PENDING',
     DISPATCHED: 'DISPATCHED',
     DELIVERED: 'DELIVERED',
@@ -28,12 +29,16 @@ export const createOrder = async (req: Request, res: Response) => {
             shipping_method,
             shipping_cost,
             notes,
-            items
+            items,
+            status // Accept status property
         } = req.body;
 
-        const userId = (req as any).user?.userId; // Assumes authMiddleware adds user
+        const userId = (req as any).user?.userId;
 
-        if (!items || items.length === 0) {
+        const isDraft = status === 'DRAFT';
+
+        // Validation: Items required only if NOT draft
+        if (!isDraft && (!items || items.length === 0)) {
             return res.status(400).json({ message: 'Order must contain at least one item' });
         }
 
@@ -47,44 +52,40 @@ export const createOrder = async (req: Request, res: Response) => {
             cost_price: number;
             selling_price: number;
             total_item_value: number;
-            // Add implicit relations if needed, or rely on optionality
         }
 
         const orderItemsData: any[] = [];
 
-        // Calculate totals and prepare item data
-        for (const item of items as OrderItemInput[]) {
-            const itemCost = Number(item.cost_price);
-            const itemSelling = Number(item.selling_price);
-            const quantity = Number(item.quantity);
+        // Calculate totals if items exist
+        if (items && items.length > 0) {
+            for (const item of items as OrderItemInput[]) {
+                const itemCost = Number(item.cost_price);
+                const itemSelling = Number(item.selling_price);
+                const quantity = Number(item.quantity);
 
-            const totalItemValue = itemSelling * quantity;
-            const totalItemCost = itemCost * quantity;
+                const totalItemValue = itemSelling * quantity;
+                const totalItemCost = itemCost * quantity;
 
-            total_selling_price += totalItemValue;
-            total_cost_price += totalItemCost;
+                total_selling_price += totalItemValue;
+                total_cost_price += totalItemCost;
 
-            orderItemsData.push({
-                product_id: item.productId || null, // Optional for manual items
-                product_name: item.name,
-                quantity: quantity,
-                cost_price: itemCost,
-                selling_price: itemSelling,
-                total_item_value: totalItemValue
-            });
+                orderItemsData.push({
+                    product_id: item.productId || null,
+                    product_name: item.name,
+                    quantity: quantity,
+                    cost_price: itemCost,
+                    selling_price: itemSelling,
+                    total_item_value: totalItemValue
+                });
+            }
         }
 
         const shippingCostNum = Number(shipping_cost || 0);
-        // Profit = Selling - Cost (Shipping income cancels out shipping expense)
+        // Profit is calculated even for drafts if items exist, otherwise 0
         const net_profit = total_selling_price - total_cost_price;
 
         // Use a transaction to create order and items
         const newOrder = await prisma.$transaction(async (tx: any) => {
-            // Generate a simple readable ID (e.g., ORD-timestamp-random) or let UUID handle it.
-            // Schema says ID is String @id but not default uuid for Order? 
-            // Checking schema... "id String @id". It does NOT say default(uuid).
-            // So we must provide ID. Let's use a timestamp-based ID for readability or UUID.
-            // Let's use a custom ID format: ORD-{YYYYMMDD}-{Random4}
             const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
             const randomSuffix = Math.floor(1000 + Math.random() * 9000);
             const orderId = `ORD-${dateStr}-${randomSuffix}`;
@@ -94,12 +95,12 @@ export const createOrder = async (req: Request, res: Response) => {
                 customer_name,
                 mobile_number,
                 address,
-                shipping_method: shipping_method,
+                shipping_method: shipping_method || 'COD', // Default if missing in draft
                 shipping_cost: shippingCostNum,
                 total_selling_price,
                 total_cost_price,
                 net_profit,
-                status: OrderStatus.PENDING,
+                status: isDraft ? OrderStatus.DRAFT : OrderStatus.PENDING,
                 created_by_id: userId,
                 items: {
                     create: orderItemsData
@@ -356,7 +357,8 @@ export const updateOrder = async (req: Request, res: Response) => {
             shipping_method,
             shipping_cost,
             notes,
-            items
+            items,
+            status // Accept status change (e.g. finalizing draft)
         } = req.body;
 
         const userId = (req as any).user?.userId;
@@ -371,12 +373,17 @@ export const updateOrder = async (req: Request, res: Response) => {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        if (existingOrder.status !== OrderStatus.PENDING) {
-            return res.status(400).json({ message: 'Only PENDING orders can be edited' });
+        // Allow editing PENDING or DRAFT
+        if (existingOrder.status !== OrderStatus.PENDING && existingOrder.status !== OrderStatus.DRAFT) {
+            return res.status(400).json({ message: 'Only PENDING or DRAFT orders can be edited' });
         }
 
-        if (!items || items.length === 0) {
-            return res.status(400).json({ message: 'Order must contain at least one item' });
+        const isFinalizing = existingOrder.status === OrderStatus.DRAFT && status === OrderStatus.PENDING;
+        const newStatus = status || existingOrder.status;
+
+        // Validation: If Finalizing or staying Pending, requires items
+        if ((newStatus === OrderStatus.PENDING) && (!items || items.length === 0)) {
+            return res.status(400).json({ message: 'Order must contain at least one item to be finalized' });
         }
 
         // 2. Recalculate Totals (Logic mirrored from createOrder)
@@ -394,25 +401,27 @@ export const updateOrder = async (req: Request, res: Response) => {
 
         const orderItemsData: OrderItemData[] = [];
 
-        for (const item of items) {
-            const itemCost = Number(item.cost_price);
-            const itemSelling = Number(item.selling_price);
-            const quantity = Number(item.quantity);
+        if (items && items.length > 0) {
+            for (const item of items) {
+                const itemCost = Number(item.cost_price);
+                const itemSelling = Number(item.selling_price);
+                const quantity = Number(item.quantity);
 
-            const totalItemValue = itemSelling * quantity;
-            const totalItemCost = itemCost * quantity;
+                const totalItemValue = itemSelling * quantity;
+                const totalItemCost = itemCost * quantity;
 
-            total_selling_price += totalItemValue;
-            total_cost_price += totalItemCost;
+                total_selling_price += totalItemValue;
+                total_cost_price += totalItemCost;
 
-            orderItemsData.push({
-                product_id: item.productId || item.product_id || null, // Handle both formats
-                product_name: item.name || item.product_name,
-                quantity: quantity,
-                cost_price: itemCost,
-                selling_price: itemSelling,
-                total_item_value: totalItemValue
-            });
+                orderItemsData.push({
+                    product_id: item.productId || item.product_id || null, // Handle both formats
+                    product_name: item.name || item.product_name,
+                    quantity: quantity,
+                    cost_price: itemCost,
+                    selling_price: itemSelling,
+                    total_item_value: totalItemValue
+                });
+            }
         }
 
         const shippingCostNum = Number(shipping_cost || 0);
@@ -434,6 +443,7 @@ export const updateOrder = async (req: Request, res: Response) => {
                     address,
                     shipping_method,
                     shipping_cost: shippingCostNum,
+                    status: newStatus, // Update status (e.g., Draft -> Pending)
                     notes: notes ? String(notes) : null,
                     total_selling_price,
                     total_cost_price,

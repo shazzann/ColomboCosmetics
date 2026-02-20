@@ -35,6 +35,7 @@ const Orders = () => {
     // Tabs configuration
     const tabs = [
         { id: 'ALL', label: 'All Orders' },
+        { id: OrderStatus.DRAFT, label: 'Drafts' },
         { id: OrderStatus.PENDING, label: 'Pending' },
         { id: OrderStatus.DISPATCHED, label: 'Dispatched' },
         { id: OrderStatus.DELIVERED, label: 'Delivered' },

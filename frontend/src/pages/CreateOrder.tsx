@@ -136,20 +136,23 @@ const CreateOrder = () => {
         }
     }, [weight, totalSelling, orderDetails.shipping_method]);
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (status: 'PENDING' | 'DRAFT' = 'PENDING') => {
         if (!orderDetails.customer_name) {
             toast.error('Customer name is required');
             return;
         }
-        if (items.length === 0) {
+        if (status !== 'DRAFT' && items.length === 0) {
             toast.error('Add at least one item');
             return;
         }
+
+        // Drafts can be saved without validation (except name)
 
         setIsLoading(true);
         try {
             const payload = {
                 ...orderDetails,
+                status, // 'PENDING' or 'DRAFT'
                 items: items.map(item => ({
                     productId: item.isManual ? undefined : item.product_id,
                     name: item.name,
@@ -160,7 +163,7 @@ const CreateOrder = () => {
             };
 
             await api.post('/orders', payload);
-            toast.success('Order created successfully!');
+            toast.success(status === 'DRAFT' ? 'Draft saved successfully!' : 'Order created successfully!');
             navigate('/orders');
         } catch (error) {
             console.error('Create order error', error);
@@ -453,18 +456,28 @@ const CreateOrder = () => {
                         </div>
                     </div>
 
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isLoading}
-                        className="w-full bg-[#EC4899] text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-pink-200 hover:bg-[#DB2777] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-                    >
-                        {isLoading ? <span className="animate-pulse">Creating...</span> : (
-                            <>
-                                <ShoppingBagIcon />
-                                CREATE ORDER
-                            </>
-                        )}
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => handleSubmit('DRAFT')}
+                            disabled={isLoading}
+                            className="flex-1 bg-white text-gray-500 py-4 rounded-2xl font-bold text-lg shadow-sm border border-gray-200 hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            <StickyNote size={20} />
+                            Save Draft
+                        </button>
+                        <button
+                            onClick={() => handleSubmit('PENDING')}
+                            disabled={isLoading}
+                            className="flex-[2] bg-[#EC4899] text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-pink-200 hover:bg-[#DB2777] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                        >
+                            {isLoading ? <span className="animate-pulse">Creating...</span> : (
+                                <>
+                                    <ShoppingBagIcon />
+                                    CREATE ORDER
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
 
             </div>

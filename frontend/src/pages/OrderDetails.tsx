@@ -170,6 +170,15 @@ Thank you for your order!`;
         }
     };
 
+    const getPreviousStatus = (current: OrderStatus): OrderStatus | null => {
+        switch (current) {
+            case OrderStatus.DISPATCHED: return OrderStatus.PENDING;
+            case OrderStatus.DELIVERED: return OrderStatus.DISPATCHED;
+            case OrderStatus.RETURNED: return OrderStatus.DISPATCHED;
+            default: return null;
+        }
+    };
+
     // Edit Handlers
     const handleEditChange = (field: string, value: any) => {
         setEditedOrder({ ...editedOrder, [field]: value });
@@ -216,8 +225,8 @@ Thank you for your order!`;
         setEditedOrder({ ...editedOrder, items: [...editedOrder.items, newItem] });
     };
 
-    const handleSaveEdit = async () => {
-        if (!editedOrder.customer_name || editedOrder.items.length === 0) {
+    const handleSaveEdit = async (targetStatus?: OrderStatus) => {
+        if (!editedOrder.customer_name || (targetStatus !== 'DRAFT' && editedOrder.items.length === 0)) {
             toast.error('Please fill required fields');
             return;
         }
@@ -226,6 +235,7 @@ Thank you for your order!`;
         try {
             const payload = {
                 ...editedOrder,
+                status: targetStatus || editedOrder.status, // Update status if provided
                 items: editedOrder.items.map((item: any) => ({
                     productId: item.product_id,
                     name: item.product_name,
@@ -238,7 +248,8 @@ Thank you for your order!`;
             const { data } = await api.put(`/orders/${id}`, payload);
             setOrder(data);
             setIsEditing(false);
-            toast.success('Order updated successfully', { id: toastId });
+            toast.success(targetStatus === 'PENDING' ? 'Order finalized!' : 'Draft updated successfully', { id: toastId });
+            // If finalized, maybe navigate or just show updated order
         } catch (error) {
             console.error('Update error:', error);
             toast.error('Failed to update order', { id: toastId });
@@ -276,7 +287,7 @@ Thank you for your order!`;
                         <MessageCircle size={20} />
                     </button>
 
-                    {user?.role === 'ADMIN' && !isEditing && (
+                    {user?.role === 'ADMIN' && !isEditing && order.status !== 'DRAFT' && (
                         <>
                             <button
                                 onClick={() => window.open(`/orders/${id}/label`, '_blank')}
@@ -295,7 +306,7 @@ Thank you for your order!`;
                         </>
                     )}
 
-                    {order.status === 'PENDING' && !isEditing && (
+                    {(order.status === 'PENDING' || order.status === 'DRAFT') && !isEditing && (
                         <button
                             onClick={() => setIsEditing(true)}
                             className="p-2 text-pink-500 hover:bg-pink-50 rounded-full transition-colors"
@@ -311,7 +322,7 @@ Thank you for your order!`;
                         <button onClick={() => { setIsEditing(false); setEditedOrder(JSON.parse(JSON.stringify(order))); }} className="p-2 text-gray-400 hover:text-gray-600">
                             <X size={20} />
                         </button>
-                        <button onClick={handleSaveEdit} className="p-2 text-green-500 hover:text-green-600 bg-green-50 rounded-full">
+                        <button onClick={() => handleSaveEdit()} className="p-2 text-green-500 hover:text-green-600 bg-green-50 rounded-full">
                             <Save size={20} />
                         </button>
                     </div>
@@ -589,34 +600,88 @@ Thank you for your order!`;
                                 ${(Number(isEditing ? editedOrder.total_selling_price : order.total_selling_price) + Number(isEditing ? editedOrder.shipping_cost : order.shipping_cost)).toFixed(2)}
                             </span>
                         </div>
-                        {!isEditing && (
+                        {!isEditing && order.status !== 'DRAFT' && (
                             <div className="mt-4 pt-4 border-t border-gray-800 flex justify-between items-center">
-                                <span className="text-xs font-bold text-gray-500 uppercase">Net Profit</span>
-                                <span className="text-green-400 font-bold bg-green-500/10 px-3 py-1 rounded-full text-sm">
-                                    +${Number(order.net_profit).toFixed(2)}
+                                <span className="text-xs font-bold text-gray-500 uppercase">
+                                    {Number(order.net_profit) < 0 ? 'Net Loss' : 'Net Profit'}
+                                </span>
+                                <span className={`font-bold px-3 py-1 rounded-full text-sm ${Number(order.net_profit) < 0
+                                    ? 'text-red-400 bg-red-500/10'
+                                    : 'text-green-400 bg-green-500/10'
+                                    }`}>
+                                    {Number(order.net_profit) > 0 ? '+' : ''}${Number(order.net_profit).toFixed(2)}
                                 </span>
                             </div>
                         )}
                     </div>
                 </div>
 
-                {!isEditing && getNextStatus(order.status) && (
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => handleStatusUpdate(getNextStatus(order.status)!)}
-                            className="flex-1 py-4 bg-black text-white rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 hover:bg-gray-800 transition-all active:scale-95"
-                        >
-                            <span>Mark {getNextStatus(order.status)}</span>
-                            {getNextStatus(order.status) === 'DISPATCHED' ? <Truck size={18} /> : <CheckCircle size={18} />}
-                        </button>
-                        {order.status === 'DISPATCHED' && (
+                {!isEditing && (
+                    <div className="flex flex-col gap-3">
+                        {/* Status Progression */}
+                        {getNextStatus(order.status) && order.status !== 'DRAFT' && (
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => handleStatusUpdate(getNextStatus(order.status)!)}
+                                    className="flex-1 py-4 bg-black text-white rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 hover:bg-gray-800 transition-all active:scale-95"
+                                >
+                                    <span>Mark {getNextStatus(order.status)}</span>
+                                    {getNextStatus(order.status) === 'DISPATCHED' ? <Truck size={18} /> : <CheckCircle size={18} />}
+                                </button>
+                                {order.status === 'DISPATCHED' && (
+                                    <button
+                                        onClick={() => handleStatusUpdate(OrderStatus.RETURNED)}
+                                        className="px-4 py-4 bg-red-50 text-red-500 rounded-2xl font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-red-100 transition-all active:scale-95 border border-red-100"
+                                    >
+                                        <RotateCcw size={18} />
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Admin Revert Button */}
+                        {user?.role === 'ADMIN' && getPreviousStatus(order.status) && order.status !== 'DRAFT' && (
                             <button
-                                onClick={() => handleStatusUpdate(OrderStatus.RETURNED)}
-                                className="px-4 py-4 bg-red-50 text-red-500 rounded-2xl font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-red-100 transition-all active:scale-95 border border-red-100"
+                                onClick={() => handleStatusUpdate(getPreviousStatus(order.status)!)}
+                                className="w-full py-3 bg-gray-200 text-gray-600 rounded-2xl font-bold shadow-sm flex items-center justify-center gap-2 hover:bg-gray-300 transition-all active:scale-95"
                             >
-                                <RotateCcw size={18} />
+                                <RotateCcw size={16} />
+                                <span>Revert to {getPreviousStatus(order.status)}</span>
                             </button>
                         )}
+
+                        {/* Draft Actions - Hiden here, moved to Top Bar for entry */}
+                        {/* {order.status === 'DRAFT' && (
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="w-full py-4 bg-black text-white rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 hover:bg-gray-800 transition-all active:scale-95"
+                            >
+                                <StickyNote size={18} />
+                                <span>Finalize / Edit Draft</span>
+                            </button>
+                        )} */}
+                    </div>
+                )}
+
+                {/* Edit Mode Bottom Actions */}
+                {isEditing && (
+                    <div className="flex gap-3 pt-4">
+                        {order.status === 'DRAFT' && (
+                            <button
+                                onClick={() => handleSaveEdit('DRAFT')}
+                                className="flex-1 bg-white text-gray-500 py-4 rounded-2xl font-bold text-lg shadow-sm border border-gray-200 hover:bg-gray-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                            >
+                                <StickyNote size={20} />
+                                Save Draft
+                            </button>
+                        )}
+                        <button
+                            onClick={() => handleSaveEdit(order.status === 'DRAFT' ? 'PENDING' : undefined)}
+                            className="flex-[2] bg-[#EC4899] text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-pink-200 hover:bg-[#DB2777] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                        >
+                            <Save size={20} />
+                            {order.status === 'DRAFT' ? 'CREATE ORDER' : 'SAVE CHANGES'}
+                        </button>
                     </div>
                 )}
             </div>

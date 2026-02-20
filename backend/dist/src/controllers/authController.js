@@ -8,7 +8,6 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const client_1 = __importDefault(require("../db/client"));
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
-// Force restart for Prisma types
 const login = async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -23,7 +22,7 @@ const login = async (req, res) => {
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
-        const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+        const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '365d' });
         res.json({ token, role: user.role, name: user.name });
     }
     catch (error) {

@@ -3,14 +3,15 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-export type OrderStatus = 'PENDING' | 'DISPATCHED' | 'DELIVERED' | 'RETURNED' | 'CANCELLED';
+export type OrderStatus = 'PENDING' | 'DISPATCHED' | 'DELIVERED' | 'RETURNED' | 'CANCELLED' | 'DRAFT';
 
 export const OrderStatus = {
     PENDING: 'PENDING',
     DISPATCHED: 'DISPATCHED',
     DELIVERED: 'DELIVERED',
     RETURNED: 'RETURNED',
-    CANCELLED: 'CANCELLED'
+    CANCELLED: 'CANCELLED',
+    DRAFT: 'DRAFT'
 } as const;
 
 interface Order {
@@ -42,6 +43,7 @@ const OrderCard = ({ order, onStatusUpdate }: OrderCardProps) => {
             case OrderStatus.DELIVERED: return 'bg-emerald-100 text-emerald-700 border-emerald-200'; // status-delivered equivalent
             case OrderStatus.RETURNED: return 'bg-orange-100 text-orange-700 border-orange-200';
             case OrderStatus.CANCELLED: return 'bg-red-100 text-red-700 border-red-200';
+            case OrderStatus.DRAFT: return 'bg-gray-100 text-gray-500 border-gray-200 border-dashed';
             default: return 'bg-gray-100 text-gray-700';
         }
     };
@@ -55,7 +57,8 @@ const OrderCard = ({ order, onStatusUpdate }: OrderCardProps) => {
     };
 
     const nextStatus = getNextStatus(order.status);
-    const canReturn = order.status === 'DISPATCHED'; // Only allow return from DISPATCHED as per user request
+    const canReturn = order.status === 'DISPATCHED';
+    const isDraft = order.status === 'DRAFT'; // Identify draft
     const itemCount = order.items.reduce((acc: number, item: any) => acc + item.quantity, 0);
 
     const getTimeText = () => {
@@ -107,7 +110,7 @@ const OrderCard = ({ order, onStatusUpdate }: OrderCardProps) => {
                         <span className="text-xl font-bold text-gray-900">
                             {Number(order.total_selling_price).toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">LKR</span>
                         </span>
-                        {user?.role === 'ADMIN' && (
+                        {user?.role === 'ADMIN' && !isDraft && (
                             <span className={`text-lg font-bold ${Number(order.net_profit) < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                                 {Number(order.net_profit) > 0 ? '+' : ''}{Number(order.net_profit).toLocaleString()}
                             </span>

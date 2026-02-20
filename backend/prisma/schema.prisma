@@ -15,6 +15,7 @@ enum Role {
 }
 
 enum OrderStatus {
+  DRAFT
   PENDING
   DISPATCHED
   DELIVERED
