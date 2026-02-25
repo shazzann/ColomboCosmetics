@@ -108,7 +108,7 @@ const OrderCard = ({ order, onStatusUpdate }: OrderCardProps) => {
                 <div className="flex justify-between items-center   border-gray-50">
                     <div className="flex items-center gap-2">
                         <span className="text-xl font-bold text-gray-900">
-                            {Number(order.total_selling_price).toLocaleString()} <span className="text-[10px] text-gray-400 font-normal">LKR</span>
+                            Rs. {Number(order.total_selling_price).toLocaleString()}
                         </span>
                         {user?.role === 'ADMIN' && !isDraft && (
                             <span className={`text-lg font-bold ${Number(order.net_profit) < 0 ? 'text-red-500' : 'text-emerald-500'}`}>

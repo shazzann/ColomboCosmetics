@@ -13,47 +13,50 @@ import DeliveryLabel from './pages/DeliveryLabel';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import { Toaster } from 'react-hot-toast';
+import { OrderDraftProvider } from './context/OrderDraftContext';
 
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <Toaster position="top-right" toastOptions={{
-          style: {
-            background: '#333',
-            color: '#fff',
-            borderRadius: '12px',
-          },
-          success: {
-            iconTheme: {
-              primary: '#F472B6',
-              secondary: '#fff',
+        <OrderDraftProvider>
+          <Toaster position="top-right" toastOptions={{
+            style: {
+              background: '#333',
+              color: '#fff',
+              borderRadius: '12px',
             },
-          },
-        }} />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+            success: {
+              iconTheme: {
+                primary: '#F472B6',
+                secondary: '#fff',
+              },
+            },
+          }} />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          {/* General Protected Routes (Admin & Staff) */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/orders/new" element={<CreateOrder />} />
-            <Route path="/orders/:id" element={<OrderDetails />} />
-            <Route path="/orders/:id/print" element={<Receipt />} />
-            <Route path="/orders/:id/label" element={<DeliveryLabel />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/settings" element={<Settings />} />
-          </Route>
+            {/* General Protected Routes (Admin & Staff) */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/orders/new" element={<CreateOrder />} />
+              <Route path="/orders/:id" element={<OrderDetails />} />
+              <Route path="/orders/:id/print" element={<Receipt />} />
+              <Route path="/orders/:id/label" element={<DeliveryLabel />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
 
-          {/* Admin Only Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/reports" element={<Reports />} />
-          </Route>
+            {/* Admin Only Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/reports" element={<Reports />} />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </OrderDraftProvider>
       </AuthProvider>
     </Router>
   );

@@ -95,6 +95,47 @@ const OrderDetails = () => {
         }
     };
 
+    const [lastSavedState, setLastSavedState] = useState<string>('');
+
+    // Auto-save edited order
+    useEffect(() => {
+        if (!isEditing || !editedOrder) return;
+
+        const timer = setTimeout(async () => {
+            const currentState = JSON.stringify({
+                customer_name: editedOrder.customer_name,
+                mobile_number: editedOrder.mobile_number,
+                address: editedOrder.address,
+                items: editedOrder.items,
+                shipping_method: editedOrder.shipping_method,
+                shipping_cost: editedOrder.shipping_cost,
+                notes: editedOrder.notes
+            });
+
+            if (currentState === lastSavedState) return;
+
+            try {
+                const payload = {
+                    ...editedOrder,
+                    items: editedOrder.items.map((item: any) => ({
+                        productId: item.product_id,
+                        name: item.product_name,
+                        quantity: Number(item.quantity),
+                        cost_price: Number(item.cost_price),
+                        selling_price: Number(item.selling_price)
+                    }))
+                };
+                await api.put(`/orders/${id}`, payload);
+                setLastSavedState(currentState);
+                console.log('Order edit auto-saved');
+            } catch (error) {
+                console.error('Auto-save failed', error);
+            }
+        }, 3000);
+
+        return () => clearTimeout(timer);
+    }, [editedOrder, isEditing]);
+
     const handleStatusUpdate = async (newStatus: OrderStatus) => {
         const originalStatus = order.status;
         setOrder({ ...order, status: newStatus });
@@ -128,7 +169,7 @@ const OrderDetails = () => {
         if (!order) return;
 
         const itemsList = order.items.map((item: any) =>
-            `- ${item.product_name || item.name} x ${item.quantity}: ${(Number(item.selling_price) * Number(item.quantity)).toFixed(2)}`
+            `- ${item.product_name || item.name} x ${item.quantity}: Rs. ${(Number(item.selling_price) * Number(item.quantity)).toFixed(2)}`
         ).join('\n');
 
         const subtotal = Number(order.total_selling_price);
@@ -146,9 +187,9 @@ ${order.address || ''}
 *Items:*
 ${itemsList}
 
-Subtotal: ${subtotal.toFixed(2)}
-Shipping: ${shipping.toFixed(2)}
-*TOTAL: ${total.toFixed(2)}*
+Subtotal: Rs. ${subtotal.toFixed(2)}
+Shipping: Rs. ${shipping.toFixed(2)}
+*TOTAL: Rs. ${total.toFixed(2)}*
 
 Thank you for your order!`;
 
@@ -345,7 +386,7 @@ Thank you for your order!`;
                                 >
                                     <div className="text-left overflow-hidden">
                                         <p className="font-bold text-gray-800 text-sm truncate">{product.name}</p>
-                                        <p className="text-pink-500 font-bold text-xs mt-0.5">${Number(product.default_selling_price || 0).toFixed(2)}</p>
+                                        <p className="text-pink-500 font-bold text-xs mt-0.5">Rs. {Number(product.default_selling_price || 0).toFixed(2)}</p>
                                     </div>
                                     <div className="bg-pink-100 text-pink-600 rounded-full p-1">
                                         <Plus size={14} />
@@ -375,7 +416,7 @@ Thank you for your order!`;
                                         {searchResults.map(p => (
                                             <button key={p.id} onClick={() => handleAddItem(p)} className="w-full text-left p-3 hover:bg-pink-50 text-xs font-bold border-b border-gray-50 flex justify-between">
                                                 <span>{p.name}</span>
-                                                <span className="text-pink-500">${p.default_selling_price}</span>
+                                                <span className="text-pink-500">Rs. {p.default_selling_price}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -410,7 +451,7 @@ Thank you for your order!`;
                                         )}
                                         <span>×</span>
                                         <span className="font-medium text-gray-900">
-                                            $
+                                            Rs.
                                             {isEditing ? (
                                                 <input
                                                     type="number"
@@ -423,7 +464,7 @@ Thank you for your order!`;
                                     </div>
                                     {isEditing && (
                                         <div className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                                            <span>Cost: $</span>
+                                            <span>Cost: Rs.</span>
                                             <input
                                                 type="number"
                                                 value={item.cost_price}
@@ -435,7 +476,7 @@ Thank you for your order!`;
                                     )}
                                 </div>
                                 <div className="text-right pl-4">
-                                    <p className="font-bold text-gray-900">${(Number(item.selling_price) * Number(item.quantity)).toFixed(2)}</p>
+                                    <p className="font-bold text-gray-900">Rs. {(Number(item.selling_price) * Number(item.quantity)).toFixed(2)}</p>
                                     {isEditing && (
                                         <button onClick={() => handleRemoveItem(idx)} className="text-red-400 hover:text-red-600 p-1 mt-1"><Trash2 size={14} /></button>
                                     )}
@@ -554,7 +595,7 @@ Thank you for your order!`;
                                         className="w-20 text-right bg-gray-50 rounded px-2 py-1 font-bold text-gray-900 text-lg outline-none"
                                     />
                                 ) : (
-                                    <span className="font-bold text-gray-900 text-lg">${Number(order.shipping_cost).toFixed(2)}</span>
+                                    <span className="font-bold text-gray-900 text-lg">Rs. {Number(order.shipping_cost).toFixed(2)}</span>
                                 )}
                             </div>
                             {(order.notes || isEditing) && (
@@ -587,17 +628,17 @@ Thank you for your order!`;
                     <div className="relative z-10 space-y-3">
                         <div className="flex justify-between text-gray-400 text-sm">
                             <span>Subtotal</span>
-                            <span>${Number(isEditing ? editedOrder.total_selling_price : order.total_selling_price).toFixed(2)}</span>
+                            <span>Rs. {Number(isEditing ? editedOrder.total_selling_price : order.total_selling_price).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-gray-400 text-sm">
                             <span>Shipping</span>
-                            <span>${Number(isEditing ? editedOrder.shipping_cost : order.shipping_cost).toFixed(2)}</span>
+                            <span>Rs. {Number(isEditing ? editedOrder.shipping_cost : order.shipping_cost).toFixed(2)}</span>
                         </div>
                         <div className="h-px bg-gray-700 my-2"></div>
                         <div className="flex justify-between text-xl font-serif font-bold">
                             <span>Total</span>
                             <span className="text-pink-400">
-                                ${(Number(isEditing ? editedOrder.total_selling_price : order.total_selling_price) + Number(isEditing ? editedOrder.shipping_cost : order.shipping_cost)).toFixed(2)}
+                                Rs. {(Number(isEditing ? editedOrder.total_selling_price : order.total_selling_price) + Number(isEditing ? editedOrder.shipping_cost : order.shipping_cost)).toFixed(2)}
                             </span>
                         </div>
                         {!isEditing && order.status !== 'DRAFT' && (
@@ -609,7 +650,7 @@ Thank you for your order!`;
                                     ? 'text-red-400 bg-red-500/10'
                                     : 'text-green-400 bg-green-500/10'
                                     }`}>
-                                    {Number(order.net_profit) > 0 ? '+' : ''}${Number(order.net_profit).toFixed(2)}
+                                    {Number(order.net_profit) > 0 ? '+' : ''}Rs. {Number(order.net_profit).toFixed(2)}
                                 </span>
                             </div>
                         )}

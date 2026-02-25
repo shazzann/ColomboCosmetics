@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import api from '../api/client';
 import BottomNav from '../components/BottomNav';
 import { calculateShipping } from '../utils/shipping';
+import { useOrderDraft } from '../context/OrderDraftContext';
 
 interface CartItem {
     tempId: string;
@@ -20,21 +21,14 @@ const CreateOrder = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
 
-    // Form State
-    const [orderDetails, setOrderDetails] = useState({
-        customer_name: '',
-        mobile_number: '',
-        address: '',
-        shipping_method: 'COD', // Default to COD
-        shipping_cost: 0,
-        notes: ''
-    });
+    const {
+        orderDetails, setOrderDetails,
+        items, setItems,
+        weight, setWeight,
+        draftId,
+        resetDraft,
 
-    // Weight State
-    const [weight, setWeight] = useState<number | ''>('');
-
-    // Cart State
-    const [items, setItems] = useState<CartItem[]>([]);
+    } = useOrderDraft();
 
     // Product Search & Quick Add State
     const [searchQuery, setSearchQuery] = useState('');
@@ -136,6 +130,12 @@ const CreateOrder = () => {
         }
     }, [weight, totalSelling, orderDetails.shipping_method]);
 
+
+    // Final save on unmount (via cleanup or navigation)
+    // Note: useEffect cleanup runs on unmount. We try one last save.
+    // However, since it's async, we just rely on the periodic debounce or explicit save.
+    // React Router 6.4+ blockers are better for this, but let's stick to this for now.
+
     const handleSubmit = async (status: 'PENDING' | 'DRAFT' = 'PENDING') => {
         if (!orderDetails.customer_name) {
             toast.error('Customer name is required');
@@ -146,13 +146,11 @@ const CreateOrder = () => {
             return;
         }
 
-        // Drafts can be saved without validation (except name)
-
         setIsLoading(true);
         try {
             const payload = {
                 ...orderDetails,
-                status, // 'PENDING' or 'DRAFT'
+                status,
                 items: items.map(item => ({
                     productId: item.isManual ? undefined : item.product_id,
                     name: item.name,
@@ -162,12 +160,18 @@ const CreateOrder = () => {
                 }))
             };
 
-            await api.post('/orders', payload);
+            if (draftId) {
+                await api.put(`/orders/${draftId}`, payload);
+            } else {
+                await api.post('/orders', payload);
+            }
+
             toast.success(status === 'DRAFT' ? 'Draft saved successfully!' : 'Order created successfully!');
+            resetDraft();
             navigate('/orders');
         } catch (error) {
             console.error('Create order error', error);
-            toast.error('Failed to create order');
+            toast.error('Failed to save order');
         } finally {
             setIsLoading(false);
         }
@@ -182,10 +186,7 @@ const CreateOrder = () => {
                 </button>
                 <h1 className="text-xl font-bold text-gray-900">Create New Order</h1>
                 <button
-                    onClick={() => {
-                        setItems([]);
-                        setOrderDetails({ ...orderDetails, customer_name: '', mobile_number: '', address: '', notes: '', shipping_cost: 0 });
-                    }}
+                    onClick={resetDraft}
                     className="text-pink-500 font-semibold text-sm hover:text-pink-600 px-2"
                 >
                     Reset
@@ -217,7 +218,7 @@ const CreateOrder = () => {
                                             className="w-full text-left p-4 hover:bg-pink-50 flex justify-between items-center border-b border-gray-50 last:border-0 transition-colors"
                                         >
                                             <span className="text-sm font-bold text-gray-800">{product.name}</span>
-                                            <span className="text-xs font-bold text-pink-500 bg-pink-50 px-2 py-1 rounded-full">${Number(product.default_selling_price || 0).toFixed(2)}</span>
+                                            <span className="text-xs font-bold text-pink-500 bg-pink-50 px-2 py-1 rounded-full">Rs. {Number(product.default_selling_price || 0).toFixed(2)}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -234,7 +235,7 @@ const CreateOrder = () => {
                             >
                                 <div className="text-left overflow-hidden">
                                     <p className="font-bold text-gray-800 text-sm truncate">{product.name}</p>
-                                    <p className="text-pink-500 font-bold text-xs mt-0.5">${Number(product.default_selling_price || 0).toFixed(2)}</p>
+                                    <p className="text-pink-500 font-bold text-xs mt-0.5">Rs. {Number(product.default_selling_price || 0).toFixed(2)}</p>
                                 </div>
                                 <div className="bg-pink-500 text-white rounded-full p-1.5 shadow-sm">
                                     <Plus size={14} />
@@ -294,7 +295,7 @@ const CreateOrder = () => {
                                     <div className="col-span-2 text-right">
                                         <div className="text-[9px] text-gray-300 font-bold uppercase">Cost</div>
                                         <div className="flex items-center justify-end">
-                                            <span className="text-[10px] text-gray-400 mr-0.5">$</span>
+                                            <span className="text-[10px] text-gray-400 mr-0.5">Rs.</span>
                                             <input
                                                 type="number"
                                                 value={item.cost_price}
@@ -307,7 +308,7 @@ const CreateOrder = () => {
                                     <div className="col-span-2 text-right">
                                         <div className="text-[9px] text-gray-300 font-bold uppercase">Price</div>
                                         <div className="flex items-center justify-end">
-                                            <span className="text-[10px] text-gray-400 mr-0.5">$</span>
+                                            <span className="text-[10px] text-gray-400 mr-0.5">Rs.</span>
                                             <input
                                                 type="number"
                                                 value={item.selling_price}
@@ -320,7 +321,7 @@ const CreateOrder = () => {
                                     <div className="col-span-3 text-right pl-1">
                                         <div className="text-[9px] text-gray-300 font-bold uppercase">Total</div>
                                         <div className="font-bold text-gray-900 text-sm">
-                                            ${(Number(item.selling_price) * Number(item.quantity)).toFixed(2)}
+                                            Rs. {(Number(item.selling_price) * Number(item.quantity)).toFixed(2)}
                                         </div>
                                     </div>
                                 </div>
@@ -428,7 +429,7 @@ const CreateOrder = () => {
                                 </div>
                             </div>
                             <div className="bg-pink-50 rounded-2xl px-4 flex items-center min-w-[80px] justify-center">
-                                <span className="text-pink-600 font-bold text-sm mr-0.5">$</span>
+                                <span className="text-pink-600 font-bold text-sm mr-0.5">Rs.</span>
                                 <input
                                     type="number"
                                     value={orderDetails.shipping_cost === 0 ? '' : orderDetails.shipping_cost}
@@ -443,16 +444,16 @@ const CreateOrder = () => {
                     <div className="space-y-3 mb-8">
                         <div className="flex justify-between text-gray-500 font-medium text-sm">
                             <span>Subtotal</span>
-                            <span>${totalSelling.toFixed(2)}</span>
+                            <span>Rs. {totalSelling.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-gray-500 font-medium text-sm">
                             <span>Shipping Fee</span>
-                            <span>${shipping.toFixed(2)}</span>
+                            <span>Rs. {shipping.toFixed(2)}</span>
                         </div>
                         <div className="h-px bg-gray-100 my-4"></div>
                         <div className="flex justify-between items-center">
                             <span className="text-lg font-bold text-gray-900">TOTAL BILL</span>
-                            <span className="text-4xl font-bold text-pink-500 tracking-tight">${(totalSelling + shipping).toFixed(2)}</span>
+                            <span className="text-4xl font-bold text-pink-500 tracking-tight">Rs. {(totalSelling + shipping).toFixed(2)}</span>
                         </div>
                     </div>
 

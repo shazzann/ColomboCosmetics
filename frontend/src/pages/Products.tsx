@@ -136,7 +136,7 @@ const Products = () => {
                                     Wholesale Cost
                                 </label>
                                 <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400 font-bold">$</span>
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400 font-bold">Rs.</span>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -153,7 +153,7 @@ const Products = () => {
                                     Retail Price
                                 </label>
                                 <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400 font-bold">$</span>
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400 font-bold">Rs.</span>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -227,10 +227,10 @@ const Products = () => {
                                     <h3 className="font-serif font-bold text-gray-800 text-lg">{product.name}</h3>
                                     <div className="flex space-x-4 text-xs font-bold tracking-wide">
                                         <span className="text-gray-400">
-                                            WHOLESALE: <span className="text-gray-600">${Number(product.cost_price).toFixed(2)}</span>
+                                            WHOLESALE: <span className="text-gray-600">Rs. {Number(product.cost_price).toFixed(2)}</span>
                                         </span>
                                         <span className="text-gray-400">
-                                            RETAIL: <span className="text-pink-500">${Number(product.default_selling_price || 0).toFixed(2)}</span>
+                                            RETAIL: <span className="text-pink-500">Rs. {Number(product.default_selling_price || 0).toFixed(2)}</span>
                                         </span>
                                     </div>
                                 </div>

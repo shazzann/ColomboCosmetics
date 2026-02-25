@@ -23,7 +23,8 @@ import {
     RotateCcw,
     Wallet,
     ArrowRight,
-    ChevronDown
+    ChevronDown,
+    Settings
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -166,19 +167,18 @@ const Dashboard = () => {
         <div className="min-h-screen bg-[#f8f5f7] pb-24 font-manrope text-slate-800">
             {/* Header Section */}
             <header className="px-6 pt-8 mb-8">
-                <div className="flex justify-between items-end mb-6">
+                <div className="flex justify-between items-start mb-6">
                     <div>
                         <p className="text-xs uppercase tracking-widest text-[#f53d87]/80 font-bold mb-1">Overview</p>
                         <h1 className="font-playfair text-3xl font-bold text-slate-900">Executive Summary</h1>
                         <p className="text-xs text-gray-400 mt-1">{currentDate}</p>
                     </div>
-                    {/* <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#f53d87]/20 bg-white shadow-sm">
-                        <img
-                            className="w-full h-full object-cover"
-                            src="https://ui-avatars.com/api/?name=Admin&background=f53d87&color=fff"
-                            alt="Profile"
-                        />
-                    </div> */}
+                    <Link
+                        to="/settings"
+                        className="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-slate-500 hover:text-[#f53d87] hover:border-[#f53d87]/30 transition-colors mt-1"
+                    >
+                        <Settings size={20} />
+                    </Link>
                 </div>
 
                 <div className="flex items-center gap-3 relative" ref={filterRef}>
@@ -257,7 +257,7 @@ const Dashboard = () => {
                         <div className="absolute -right-4 -top-4 w-16 h-16 bg-[#f53d87]/10 rounded-full blur-2xl"></div>
                         <p className="text-xs font-semibold text-slate-500 mb-2">Total Sales</p>
                         <h3 className="font-playfair text-xl font-bold text-slate-900 mb-1">
-                            LKR {stats.totalSales.toLocaleString()}
+                            Rs. {stats.totalSales.toLocaleString()}
                         </h3>
                         <div className="flex items-center text-emerald-500">
                             <TrendingUp size={12} />
@@ -270,7 +270,7 @@ const Dashboard = () => {
                         <div className="absolute -right-4 -top-4 w-16 h-16 bg-[#f53d87]/20 rounded-full blur-2xl"></div>
                         <p className="text-xs font-semibold text-slate-500 mb-2">Total Profit</p>
                         <h3 className="font-playfair text-xl font-bold text-[#f53d87] mb-1">
-                            LKR {stats.totalProfit.toLocaleString()}
+                            Rs. {stats.totalProfit.toLocaleString()}
                         </h3>
                         <div className="flex items-center text-emerald-500">
                             <TrendingUp size={12} />
@@ -332,7 +332,7 @@ const Dashboard = () => {
                             </div>
                             <p className="text-xs opacity-60 mb-1">To be collected (COD)</p>
                             <div className="flex items-baseline gap-2">
-                                <h4 className="font-playfair text-3xl font-bold">LKR {stats.outstandingRevenue.toLocaleString()}</h4>
+                                <h4 className="font-playfair text-3xl font-bold">Rs. {stats.outstandingRevenue.toLocaleString()}</h4>
                             </div>
                             <div className="mt-6 pt-6 border-t border-white/10 flex justify-between items-center">
                                 <div className="flex -space-x-2">

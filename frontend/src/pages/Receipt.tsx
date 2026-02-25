@@ -46,7 +46,7 @@ const Receipt = () => {
         if (!order) return;
 
         const itemsList = order.items.map((item: any) =>
-            `- ${item.product_name || item.name} x ${item.quantity}: ${(Number(item.selling_price) * Number(item.quantity)).toFixed(2)}`
+            `- ${item.product_name || item.name} x ${item.quantity}: Rs. ${(Number(item.selling_price) * Number(item.quantity)).toFixed(2)}`
         ).join('\n');
 
         const message = `*COLOMBO COSMETICS*
@@ -60,9 +60,9 @@ ${order.address || ''}
 *Items:*
 ${itemsList}
 
-Subtotal: ${subtotal.toFixed(2)}
-Shipping: ${shipping.toFixed(2)}
-*TOTAL: ${total.toFixed(2)}*
+Subtotal: Rs. ${subtotal.toFixed(2)}
+Shipping: Rs. ${shipping.toFixed(2)}
+*TOTAL: Rs. ${total.toFixed(2)}*
 
 Thank you for your order!`;
 
@@ -114,9 +114,9 @@ Thank you for your order!`;
                                 {item.product_name || item.name}
                             </td>
                             <td className="py-2 text-center align-top">{item.quantity}</td>
-                            <td className="py-2 text-right align-top">{Number(item.selling_price).toFixed(2)}</td>
+                            <td className="py-2 text-right align-top">Rs. {Number(item.selling_price).toFixed(2)}</td>
                             <td className="py-2 text-right align-top font-bold">
-                                {(Number(item.selling_price) * Number(item.quantity)).toFixed(2)}
+                                Rs. {(Number(item.selling_price) * Number(item.quantity)).toFixed(2)}
                             </td>
                         </tr>
                     ))}
@@ -127,15 +127,15 @@ Thank you for your order!`;
             <div className="border-t border-black border-dashed pt-4 mb-8">
                 <div className="flex justify-between mb-1">
                     <span>Subtotal</span>
-                    <span>{subtotal.toFixed(2)}</span>
+                    <span>Rs. {subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between mb-1">
                     <span>Shipping</span>
-                    <span>{shipping.toFixed(2)}</span>
+                    <span>Rs. {shipping.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t border-black border-dashed">
                     <span>TOTAL</span>
-                    <span>{total.toFixed(2)}</span>
+                    <span>Rs. {total.toFixed(2)}</span>
                 </div>
             </div>
 

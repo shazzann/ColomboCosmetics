@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Truck, Calendar } from 'lucide-react';
+import { Search, Plus, Truck, Calendar, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 import api from '../api/client';
@@ -265,9 +265,9 @@ const Orders = () => {
                         <h1 className="text-xl font-extrabold tracking-tight text-gray-900">Order Management</h1>
                     </div>
                     <div className="flex gap-2">
-                        {/* <button className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
-                            <Bell size={18} />
-                        </button> */}
+                        <Link to="/settings" className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:text-[#f53d87] hover:bg-pink-50 transition-colors">
+                            <Settings size={18} />
+                        </Link>
                     </div>
                 </div>
 
@@ -277,7 +277,7 @@ const Orders = () => {
                         {activeTab !== OrderStatus.RETURNED && (
                             <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Sales</p>
-                                <p className="text-lg font-extrabold text-gray-900 mt-0.5">LKR {Number(stats.totalSales).toLocaleString()}</p>
+                                <p className="text-lg font-extrabold text-gray-900 mt-0.5">Rs. {Number(stats.totalSales).toLocaleString()}</p>
                             </div>
                         )}
                         <div className={`bg-white p-3 rounded-xl border border-gray-100 shadow-sm ${activeTab === OrderStatus.RETURNED ? 'col-span-2' : ''}`}>
@@ -288,7 +288,7 @@ const Orders = () => {
                                 ? 'text-red-500'
                                 : 'text-green-500'
                                 }`}>
-                                LKR {activeTab === OrderStatus.RETURNED
+                                Rs. {activeTab === OrderStatus.RETURNED
                                     ? Math.abs(Number(stats.totalProfit)).toLocaleString()
                                     : Number(stats.totalProfit).toLocaleString()}
                             </p>
