@@ -191,6 +191,20 @@ const Orders = () => {
         }
     };
 
+    const handleDeleteDraft = async (orderId: string) => {
+        // Optimistic removal
+        const originalOrders = orders;
+        setOrders(prev => prev.filter(o => o.id !== orderId));
+
+        try {
+            await api.delete(`/orders/${orderId}`);
+            toast.success('Draft deleted');
+        } catch (error) {
+            setOrders(originalOrders);
+            toast.error('Failed to delete draft');
+        }
+    };
+
     const handleUndo = async (orderId: string, originalStatus: OrderStatus, toastId: string) => {
         toast.dismiss(toastId);
         // Optimistic Revert
@@ -374,6 +388,7 @@ const Orders = () => {
                             key={order.id}
                             order={order}
                             onStatusUpdate={handleStatusUpdate}
+                            onDelete={handleDeleteDraft}
                         />
                     ))
                 )}

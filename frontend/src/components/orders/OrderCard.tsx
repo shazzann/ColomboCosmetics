@@ -1,4 +1,4 @@
-import { MapPin, Package, Eye, CheckCircle, Truck, RotateCcw, Printer } from 'lucide-react';
+import { MapPin, Package, Eye, CheckCircle, Truck, RotateCcw, Printer, Trash2 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -31,9 +31,10 @@ interface Order {
 interface OrderCardProps {
     order: Order;
     onStatusUpdate: (order: Order, newStatus: OrderStatus) => void;
+    onDelete?: (orderId: string) => void;
 }
 
-const OrderCard = ({ order, onStatusUpdate }: OrderCardProps) => {
+const OrderCard = ({ order, onStatusUpdate, onDelete }: OrderCardProps) => {
     const { user } = useAuth();
 
     const getStatusStyles = (status: OrderStatus) => {
@@ -158,6 +159,16 @@ const OrderCard = ({ order, onStatusUpdate }: OrderCardProps) => {
                         >
                             <Printer size={20} />
                         </Link>
+
+                        {isDraft && onDelete && (
+                            <button
+                                onClick={() => onDelete(order.id)}
+                                className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Delete Draft"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
