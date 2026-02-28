@@ -26,6 +26,7 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
+// Force nodemon restart for new permissions
 app.get("/db-check", async (req, res) => {
     try {
         await client_1.default.user.findFirst();

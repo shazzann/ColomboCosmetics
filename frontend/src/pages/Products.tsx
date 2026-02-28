@@ -136,14 +136,14 @@ const Products = () => {
                                     Wholesale Cost
                                 </label>
                                 <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400 font-bold">Rs.</span>
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400 font-bold text-sm">Rs</span>
                                     <input
                                         type="number"
                                         step="0.01"
                                         placeholder="0.00"
                                         value={formData.cost_price}
                                         onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                                        className="w-full pl-8 pr-4 py-3 bg-pink-50/50 rounded-xl text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-300 transition-all font-medium"
+                                        className="w-full pl-11 pr-4 py-3 bg-pink-50/50 rounded-xl text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-300 transition-all font-medium"
                                         required
                                     />
                                 </div>
@@ -153,14 +153,14 @@ const Products = () => {
                                     Retail Price
                                 </label>
                                 <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400 font-bold">Rs.</span>
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-400 font-bold text-sm">Rs</span>
                                     <input
                                         type="number"
                                         step="0.01"
                                         placeholder="0.00"
                                         value={formData.default_selling_price}
                                         onChange={(e) => setFormData({ ...formData, default_selling_price: e.target.value })}
-                                        className="w-full pl-8 pr-4 py-3 bg-pink-50/50 rounded-xl text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-300 transition-all font-medium"
+                                        className="w-full pl-11 pr-4 py-3 bg-pink-50/50 rounded-xl text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-300 transition-all font-medium"
                                     />
                                 </div>
                             </div>

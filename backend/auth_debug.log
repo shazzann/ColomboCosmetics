@@ -1,0 +1,4 @@
+[authorizeRole] URL: /api/orders/undefined, User role: STAFF, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-20260228-9139, User role: STAFF, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-20260228-3494, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-20260228-7767, User role: ADMIN, Allowed roles: ADMIN,STAFF

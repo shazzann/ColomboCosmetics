@@ -381,6 +381,14 @@ const deleteOrder = async (req, res) => {
     try {
         const id = String(req.params.id);
         const userId = req.user?.userId;
+        const role = req.user?.role;
+        const order = await client_1.default.order.findUnique({ where: { id } });
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+        if (role !== 'ADMIN' && order.status !== client_2.OrderStatus.DRAFT) {
+            return res.status(403).json({ message: 'Access denied: Staff can only delete drafts' });
+        }
         // Transaction to delete items first, then order
         await client_1.default.$transaction(async (tx) => {
             await tx.orderItem.deleteMany({

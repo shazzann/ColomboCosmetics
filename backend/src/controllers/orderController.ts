@@ -475,6 +475,16 @@ export const deleteOrder = async (req: Request, res: Response) => {
     try {
         const id = String(req.params.id);
         const userId = (req as any).user?.userId;
+        const role = (req as any).user?.role;
+
+        const order = await prisma.order.findUnique({ where: { id } });
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        if (role !== 'ADMIN' && order.status !== PrismaOrderStatus.DRAFT) {
+            return res.status(403).json({ message: 'Access denied: Staff can only delete drafts' });
+        }
 
         // Transaction to delete items first, then order
         await prisma.$transaction(async (tx: any) => {

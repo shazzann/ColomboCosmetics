@@ -23,13 +23,18 @@ const authenticateToken = (req, res, next) => {
     });
 };
 exports.authenticateToken = authenticateToken;
+const fs_1 = __importDefault(require("fs"));
 const authorizeRole = (roles) => {
     return (req, res, next) => {
+        const logMsg = `[authorizeRole] URL: ${req.originalUrl}, User role: ${req.user?.role}, Allowed roles: ${roles}\n`;
+        fs_1.default.appendFileSync('auth_debug.log', logMsg);
         if (!req.user) {
+            fs_1.default.appendFileSync('auth_debug.log', `REJECTED no user\n`);
             res.status(401).json({ message: 'User not authenticated' });
             return;
         }
         if (!roles.includes(req.user.role)) {
+            fs_1.default.appendFileSync('auth_debug.log', `[authorizeRole] REJECTED. User ${req.user.userId} has role ${req.user.role}\n`);
             res.status(403).json({ message: 'Access denied: Insufficient permissions' });
             return;
         }

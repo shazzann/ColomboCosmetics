@@ -10,12 +10,14 @@ import OrderCard, { OrderStatus } from '../components/orders/OrderCard';
 import Skeleton from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import OrderedItemsTable from '../components/orders/OrderedItemsTable';
+import { useOrderDraft } from '../context/OrderDraftContext';
 
 type TabType = OrderStatus | 'ALL' | 'ORDERED_ITEMS';
 
 const Orders = () => {
 
     const { user } = useAuth();
+    const { draftId, resetDraft } = useOrderDraft();
     // Initialize state from sessionStorage if available
     const [activeTab, setActiveTab] = useState<TabType>(() => {
         return (sessionStorage.getItem('orders_activeTab') as TabType) || 'ALL';
@@ -198,6 +200,9 @@ const Orders = () => {
 
         try {
             await api.delete(`/orders/${orderId}`);
+            if (draftId === orderId) {
+                resetDraft();
+            }
             toast.success('Draft deleted');
         } catch (error) {
             setOrders(originalOrders);

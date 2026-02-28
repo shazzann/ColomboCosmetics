@@ -274,8 +274,8 @@ const CreateOrder = () => {
                                 </div>
 
                                 {/* Content */}
-                                <div className="flex-1 min-w-0 grid grid-cols-12 gap-2 items-center">
-                                    <div className="col-span-5">
+                                <div className="flex-1 min-w-0 grid grid-cols-12 gap-1.5 items-center">
+                                    <div className="col-span-4">
                                         {item.isManual ? (
                                             <input
                                                 type="text"
@@ -300,12 +300,12 @@ const CreateOrder = () => {
                                                 type="number"
                                                 value={item.cost_price}
                                                 onChange={(e) => updateItem(item.tempId, 'cost_price', e.target.value)}
-                                                className="w-full text-right bg-transparent outline-none font-medium text-gray-500 text-sm focus:text-pink-500 border-b border-transparent focus:border-pink-100 transition-colors"
+                                                className="w-full text-right bg-transparent outline-none font-medium text-gray-500 text-xs focus:text-pink-500 border-b border-transparent focus:border-pink-100 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                             />
                                         </div>
                                     </div>
 
-                                    <div className="col-span-2 text-right">
+                                    <div className="col-span-3 text-right">
                                         <div className="text-[9px] text-gray-300 font-bold uppercase">Price</div>
                                         <div className="flex items-center justify-end">
                                             <span className="text-[10px] text-gray-400 mr-0.5">Rs.</span>
@@ -313,14 +313,14 @@ const CreateOrder = () => {
                                                 type="number"
                                                 value={item.selling_price}
                                                 onChange={(e) => updateItem(item.tempId, 'selling_price', e.target.value)}
-                                                className="w-full text-right bg-transparent outline-none font-bold text-gray-700 text-sm focus:text-pink-500 border-b border-transparent focus:border-pink-100 transition-colors"
+                                                className="w-full text-right bg-transparent outline-none font-bold text-gray-700 text-xs focus:text-pink-500 border-b border-transparent focus:border-pink-100 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="col-span-3 text-right pl-1">
                                         <div className="text-[9px] text-gray-300 font-bold uppercase">Total</div>
-                                        <div className="font-bold text-gray-900 text-sm">
+                                        <div className="font-bold text-gray-900 text-xs whitespace-nowrap">
                                             Rs. {(Number(item.selling_price) * Number(item.quantity)).toFixed(2)}
                                         </div>
                                     </div>

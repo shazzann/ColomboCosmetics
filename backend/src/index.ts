@@ -22,13 +22,14 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/reports', reportRoutes);
 
 app.get('/', (req, res) => {
-    res.json({ message: 'Welcome to Colombo Cosmetics API' });
+  res.json({ message: 'Welcome to Colombo Cosmetics API' });
 });
 
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+  console.log(`Server is running on port ${port}`);
 });
 
+// Force nodemon restart for new permissions
 app.get("/db-check", async (req, res) => {
   try {
     await prisma.user.findFirst();
