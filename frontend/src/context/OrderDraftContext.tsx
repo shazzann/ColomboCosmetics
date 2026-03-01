@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import api from '../api/client';
 
 interface CartItem {
     tempId: string;
@@ -30,7 +29,6 @@ interface OrderDraftContextType {
     draftId: string | null;
     setDraftId: React.Dispatch<React.SetStateAction<string | null>>;
     resetDraft: () => void;
-    isAutoSaving: boolean;
 }
 
 const OrderDraftContext = createContext<OrderDraftContextType | undefined>(undefined);
@@ -96,9 +94,6 @@ export const OrderDraftProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         return null;
     });
 
-    const [lastSavedState, setLastSavedState] = useState<string>('');
-    const [isAutoSaving, setIsAutoSaving] = useState(false);
-
     // Save to localStorage whenever state changes
     useEffect(() => {
         const stateToSave = { orderDetails, items, weight, draftId };
@@ -111,54 +106,7 @@ export const OrderDraftProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setWeight('');
         setDraftId(null);
         localStorage.removeItem(STORAGE_KEY);
-        setLastSavedState('');
     }, []);
-
-    const autoSave = useCallback(async () => {
-        // Only auto-save if there's either a customer name or at least one item
-        if (!orderDetails.customer_name && items.length === 0) return;
-
-        const currentState = JSON.stringify({ orderDetails, items, weight });
-        if (currentState === lastSavedState) return;
-
-        setIsAutoSaving(true);
-        try {
-            const payload = {
-                ...orderDetails,
-                customer_name: orderDetails.customer_name || `Untitled Draft (${new Date().toLocaleDateString()})`,
-                status: 'DRAFT',
-                items: items.map(item => ({
-                    productId: item.isManual ? undefined : item.product_id,
-                    name: item.name,
-                    quantity: Number(item.quantity),
-                    cost_price: Number(item.cost_price),
-                    selling_price: Number(item.selling_price)
-                }))
-            };
-
-            if (draftId) {
-                await api.put(`/orders/${draftId}`, payload);
-            } else {
-                const { data } = await api.post('/orders', payload);
-                setDraftId(data.id);
-            }
-            setLastSavedState(currentState);
-            console.log('Draft auto-saved');
-        } catch (error) {
-            console.error('Auto-save failed', error);
-        } finally {
-            setIsAutoSaving(false);
-        }
-    }, [orderDetails, items, weight, draftId, lastSavedState]);
-
-    // Debounced auto-save
-    useEffect(() => {
-        const timeout = setTimeout(() => {
-            autoSave();
-        }, 5000); // 5 seconds debounced (slightly longer for global context)
-
-        return () => clearTimeout(timeout);
-    }, [autoSave]);
 
     return (
         <OrderDraftContext.Provider value={{
@@ -166,8 +114,7 @@ export const OrderDraftProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             items, setItems,
             weight, setWeight,
             draftId, setDraftId,
-            resetDraft,
-            isAutoSaving
+            resetDraft
         }}>
             {children}
         </OrderDraftContext.Provider>

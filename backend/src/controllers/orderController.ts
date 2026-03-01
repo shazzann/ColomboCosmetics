@@ -28,9 +28,14 @@ export const createOrder = async (req: Request, res: Response) => {
 
         const isDraft = status === 'DRAFT';
 
-        // Validation: Items required only if NOT draft
-        if (!isDraft && (!items || items.length === 0)) {
-            return res.status(400).json({ message: 'Order must contain at least one item' });
+        // Validation
+        if (!isDraft) {
+            if (!customer_name) {
+                return res.status(400).json({ message: 'Customer name is required' });
+            }
+            if (!items || items.length === 0) {
+                return res.status(400).json({ message: 'Order must contain at least one item' });
+            }
         }
 
         let total_selling_price = 0;
@@ -50,9 +55,9 @@ export const createOrder = async (req: Request, res: Response) => {
         // Calculate totals if items exist
         if (items && items.length > 0) {
             for (const item of items as OrderItemInput[]) {
-                const itemCost = Number(item.cost_price);
-                const itemSelling = Number(item.selling_price);
-                const quantity = Number(item.quantity);
+                const itemCost = Number(item.cost_price) || 0;
+                const itemSelling = Number(item.selling_price) || 0;
+                const quantity = Number(item.quantity) || 1;
 
                 const totalItemValue = itemSelling * quantity;
                 const totalItemCost = itemCost * quantity;
@@ -83,11 +88,11 @@ export const createOrder = async (req: Request, res: Response) => {
 
             const orderData: any = {
                 id: orderId,
-                customer_name,
-                mobile_number,
-                address,
-                shipping_method: shipping_method || 'COD', // Default if missing in draft
-                shipping_cost: shippingCostNum,
+                customer_name: customer_name || '',
+                mobile_number: mobile_number || '',
+                address: address || '',
+                shipping_method: shipping_method || 'COD',
+                shipping_cost: isNaN(shippingCostNum) ? 0 : shippingCostNum,
                 total_selling_price,
                 total_cost_price,
                 net_profit,
@@ -114,9 +119,9 @@ export const createOrder = async (req: Request, res: Response) => {
 
         res.status(201).json(newOrder);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating order:', error);
-        res.status(500).json({ message: 'Failed to create order' });
+        res.status(500).json({ message: 'Failed to create order', error: error.message || String(error) });
     }
 };
 
@@ -429,11 +434,11 @@ export const updateOrder = async (req: Request, res: Response) => {
             const order = await tx.order.update({
                 where: { id },
                 data: {
-                    customer_name,
-                    mobile_number,
-                    address,
-                    shipping_method,
-                    shipping_cost: shippingCostNum,
+                    customer_name: customer_name || '',
+                    mobile_number: mobile_number || '',
+                    address: address || '',
+                    shipping_method: shipping_method || 'COD',
+                    shipping_cost: isNaN(shippingCostNum) ? 0 : shippingCostNum,
                     status: newStatus, // Update status (e.g., Draft -> Pending)
                     notes: notes ? String(notes) : null,
                     total_selling_price,
