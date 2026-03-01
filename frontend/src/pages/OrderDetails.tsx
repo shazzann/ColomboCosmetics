@@ -95,46 +95,7 @@ const OrderDetails = () => {
         }
     };
 
-    const [lastSavedState, setLastSavedState] = useState<string>('');
 
-    // Auto-save edited order
-    useEffect(() => {
-        if (!isEditing || !editedOrder) return;
-
-        const timer = setTimeout(async () => {
-            const currentState = JSON.stringify({
-                customer_name: editedOrder.customer_name,
-                mobile_number: editedOrder.mobile_number,
-                address: editedOrder.address,
-                items: editedOrder.items,
-                shipping_method: editedOrder.shipping_method,
-                shipping_cost: editedOrder.shipping_cost,
-                notes: editedOrder.notes
-            });
-
-            if (currentState === lastSavedState) return;
-
-            try {
-                const payload = {
-                    ...editedOrder,
-                    items: editedOrder.items.map((item: any) => ({
-                        productId: item.product_id,
-                        name: item.product_name,
-                        quantity: Number(item.quantity),
-                        cost_price: Number(item.cost_price),
-                        selling_price: Number(item.selling_price)
-                    }))
-                };
-                await api.put(`/orders/${id}`, payload);
-                setLastSavedState(currentState);
-                console.log('Order edit auto-saved');
-            } catch (error) {
-                console.error('Auto-save failed', error);
-            }
-        }, 3000);
-
-        return () => clearTimeout(timer);
-    }, [editedOrder, isEditing]);
 
     const handleStatusUpdate = async (newStatus: OrderStatus) => {
         const originalStatus = order.status;

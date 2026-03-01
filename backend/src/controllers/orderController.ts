@@ -120,6 +120,7 @@ export const createOrder = async (req: Request, res: Response) => {
         res.status(201).json(newOrder);
 
     } catch (error: any) {
+        require('fs').writeFileSync('debug.log', JSON.stringify({ body: req.body, error: error.stack || String(error) }, null, 2));
         console.error('Error creating order:', error);
         res.status(500).json({ message: 'Failed to create order', error: error.message || String(error) });
     }
