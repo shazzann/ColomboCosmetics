@@ -64,7 +64,10 @@ Subtotal: Rs. ${subtotal.toFixed(2)}
 Shipping: Rs. ${shipping.toFixed(2)}
 *TOTAL: Rs. ${total.toFixed(2)}*
 
-Thank you for your order!`;
+Thank you for your order!
+
+*Join our WhatsApp Group for exclusive offers:*
+https://chat.whatsapp.com/LvKOhtnIkisGwVZlu7ZQLC`;
 
         const encodedMessage = encodeURIComponent(message);
         const phoneNumber = order.mobile_number.replace(/\D/g, ''); // Strip non-digits
