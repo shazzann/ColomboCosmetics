@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteProduct = exports.updateProduct = exports.createProduct = exports.getProducts = void 0;
+exports.getPopularProducts = exports.deleteProduct = exports.updateProduct = exports.createProduct = exports.getProducts = void 0;
 const client_1 = __importDefault(require("../db/client"));
 const getProducts = async (req, res) => {
     try {
@@ -75,3 +75,41 @@ const deleteProduct = async (req, res) => {
     }
 };
 exports.deleteProduct = deleteProduct;
+const getPopularProducts = async (req, res) => {
+    try {
+        const limit = req.query.limit ? Number(req.query.limit) : 10;
+        // Get products ordered most frequently (by number of order lines, not quantity)
+        const popular = await client_1.default.orderItem.groupBy({
+            by: ['product_id'],
+            where: {
+                product_id: { not: null },
+            },
+            _count: { product_id: true },
+            orderBy: { _count: { product_id: 'desc' } },
+            take: limit,
+        });
+        const productIds = popular
+            .map((p) => p.product_id)
+            .filter((id) => id !== null);
+        if (productIds.length === 0) {
+            // Fallback: return newest products
+            const products = await client_1.default.product.findMany({
+                take: limit,
+                orderBy: { created_at: 'desc' },
+            });
+            return res.json(products);
+        }
+        const products = await client_1.default.product.findMany({
+            where: { id: { in: productIds } },
+        });
+        // Sort by the same order as the popularity ranking
+        const idOrder = new Map(productIds.map((id, i) => [id, i]));
+        products.sort((a, b) => (idOrder.get(a.id) ?? 999) - (idOrder.get(b.id) ?? 999));
+        res.json(products);
+    }
+    catch (error) {
+        console.error('Error fetching popular products:', error);
+        res.status(500).json({ message: 'Error fetching popular products' });
+    }
+};
+exports.getPopularProducts = getPopularProducts;

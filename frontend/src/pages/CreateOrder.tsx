@@ -38,7 +38,7 @@ const CreateOrder = () => {
     useEffect(() => {
         const fetchQuickAdd = async () => {
             try {
-                const { data } = await api.get('/products', { params: { limit: 5 } });
+                const { data } = await api.get('/products/popular', { params: { limit: 10 } });
                 setQuickAddProducts(data);
             } catch (error) {
                 console.error('Error fetching quick add products', error);

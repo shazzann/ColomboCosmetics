@@ -6,6 +6,7 @@ const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = (0, express_1.Router)();
 // Assuming all product routes are protected
 router.use(authMiddleware_1.authenticateToken);
+router.get('/popular', productController_1.getPopularProducts);
 router.get('/', productController_1.getProducts);
 router.post('/', productController_1.createProduct);
 router.put('/:id', productController_1.updateProduct);

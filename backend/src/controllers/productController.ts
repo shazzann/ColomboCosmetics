@@ -72,3 +72,46 @@ export const deleteProduct = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error deleting product' });
     }
 };
+
+export const getPopularProducts = async (req: Request, res: Response) => {
+    try {
+        const limit = req.query.limit ? Number(req.query.limit) : 10;
+
+        // Get products ordered most frequently (by number of order lines, not quantity)
+        const popular = await prisma.orderItem.groupBy({
+            by: ['product_id'],
+            where: {
+                product_id: { not: null },
+            },
+            _count: { product_id: true },
+            orderBy: { _count: { product_id: 'desc' } },
+            take: limit,
+        });
+
+        const productIds = popular
+            .map((p) => p.product_id)
+            .filter((id): id is string => id !== null);
+
+        if (productIds.length === 0) {
+            // Fallback: return newest products
+            const products = await prisma.product.findMany({
+                take: limit,
+                orderBy: { created_at: 'desc' },
+            });
+            return res.json(products);
+        }
+
+        const products = await prisma.product.findMany({
+            where: { id: { in: productIds } },
+        });
+
+        // Sort by the same order as the popularity ranking
+        const idOrder = new Map(productIds.map((id, i) => [id, i]));
+        products.sort((a, b) => (idOrder.get(a.id) ?? 999) - (idOrder.get(b.id) ?? 999));
+
+        res.json(products);
+    } catch (error) {
+        console.error('Error fetching popular products:', error);
+        res.status(500).json({ message: 'Error fetching popular products' });
+    }
+};
