@@ -205,8 +205,8 @@ Thank you for your order!`;
             product_name: product.name,
             quantity: 1,
             cost_price: Number(product.cost_price),
-            selling_price: Number(product.default_selling_price || product.cost_price * 2),
-            total_item_value: Number(product.default_selling_price || product.cost_price * 2)
+            selling_price: product.default_selling_price ? Number(product.default_selling_price) : '',
+            total_item_value: product.default_selling_price ? Number(product.default_selling_price) : ''
         };
         const newItems = [...editedOrder.items, newItem];
         setEditedOrder({ ...editedOrder, items: newItems });

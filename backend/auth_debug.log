@@ -2,3 +2,7 @@
 [authorizeRole] URL: /api/orders/ORD-20260228-9139, User role: STAFF, Allowed roles: ADMIN,STAFF
 [authorizeRole] URL: /api/orders/ORD-20260228-3494, User role: ADMIN, Allowed roles: ADMIN,STAFF
 [authorizeRole] URL: /api/orders/ORD-20260228-7767, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-20260301-6298, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-20260301-9408, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-TEST-313, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-20260302-6122, User role: ADMIN, Allowed roles: ADMIN,STAFF

@@ -71,7 +71,7 @@ const CreateOrder = () => {
             name: product.name,
             quantity: 1,
             cost_price: Number(product.cost_price),
-            selling_price: Number(product.default_selling_price || product.cost_price * 2),
+            selling_price: product.default_selling_price ? Number(product.default_selling_price) : '',
             isManual: false
         };
         setItems([...items, newItem]);
