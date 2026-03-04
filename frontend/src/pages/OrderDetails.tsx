@@ -571,7 +571,7 @@ Thank you for your order!`;
                                             className="w-full p-2 bg-amber-50 rounded-xl text-sm border border-amber-100 outline-none resize-none"
                                         />
                                     ) : (
-                                        <p className="text-amber-800 bg-amber-50 p-3 rounded-xl text-sm leading-relaxed border border-amber-100">
+                                        <p className="text-amber-800 bg-amber-50 p-3 rounded-xl text-sm leading-relaxed border border-amber-100 whitespace-pre-wrap">
                                             {order.notes}
                                         </p>
                                     )}
@@ -586,36 +586,45 @@ Thank you for your order!`;
                     <div className="absolute -top-6 -right-6 text-gray-800 opacity-20 transform rotate-12">
                         <DollarSign size={150} />
                     </div>
-                    <div className="relative z-10 space-y-3">
-                        <div className="flex justify-between text-gray-400 text-sm">
-                            <span>Subtotal</span>
-                            <span>Rs. {Number(isEditing ? editedOrder.total_selling_price : order.total_selling_price).toFixed(2)}</span>
+
+                    {!isEditing && user?.role === 'STAFF' && order.shipping_method === 'Speed Post' ? (
+                        <div className="relative z-10 flex flex-col items-center justify-center py-6 space-y-2">
+                            <Truck size={32} className="text-pink-400 opacity-80" />
+                            <span className="text-xl font-serif font-bold tracking-wider text-gray-300">SPEED POST ORDER</span>
+
                         </div>
-                        <div className="flex justify-between text-gray-400 text-sm">
-                            <span>Shipping</span>
-                            <span>Rs. {Number(isEditing ? editedOrder.shipping_cost : order.shipping_cost).toFixed(2)}</span>
-                        </div>
-                        <div className="h-px bg-gray-700 my-2"></div>
-                        <div className="flex justify-between text-xl font-serif font-bold">
-                            <span>Total</span>
-                            <span className="text-pink-400">
-                                Rs. {(Number(isEditing ? editedOrder.total_selling_price : order.total_selling_price) + Number(isEditing ? editedOrder.shipping_cost : order.shipping_cost)).toFixed(2)}
-                            </span>
-                        </div>
-                        {!isEditing && order.status !== 'DRAFT' && (
-                            <div className="mt-4 pt-4 border-t border-gray-800 flex justify-between items-center">
-                                <span className="text-xs font-bold text-gray-500 uppercase">
-                                    {Number(order.net_profit) < 0 ? 'Net Loss' : 'Net Profit'}
-                                </span>
-                                <span className={`font-bold px-3 py-1 rounded-full text-sm ${Number(order.net_profit) < 0
-                                    ? 'text-red-400 bg-red-500/10'
-                                    : 'text-green-400 bg-green-500/10'
-                                    }`}>
-                                    {Number(order.net_profit) > 0 ? '+' : ''}Rs. {Number(order.net_profit).toFixed(2)}
+                    ) : (
+                        <div className="relative z-10 space-y-3">
+                            <div className="flex justify-between text-gray-400 text-sm">
+                                <span>Subtotal</span>
+                                <span>Rs. {Number(isEditing ? editedOrder.total_selling_price : order.total_selling_price).toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-gray-400 text-sm">
+                                <span>Shipping</span>
+                                <span>Rs. {Number(isEditing ? editedOrder.shipping_cost : order.shipping_cost).toFixed(2)}</span>
+                            </div>
+                            <div className="h-px bg-gray-700 my-2"></div>
+                            <div className="flex justify-between text-xl font-serif font-bold">
+                                <span>Total</span>
+                                <span className="text-pink-400">
+                                    Rs. {(Number(isEditing ? editedOrder.total_selling_price : order.total_selling_price) + Number(isEditing ? editedOrder.shipping_cost : order.shipping_cost)).toFixed(2)}
                                 </span>
                             </div>
-                        )}
-                    </div>
+                            {!isEditing && order.status !== 'DRAFT' && (
+                                <div className="mt-4 pt-4 border-t border-gray-800 flex justify-between items-center">
+                                    <span className="text-xs font-bold text-gray-500 uppercase">
+                                        {Number(order.net_profit) < 0 ? 'Net Loss' : 'Net Profit'}
+                                    </span>
+                                    <span className={`font-bold px-3 py-1 rounded-full text-sm ${Number(order.net_profit) < 0
+                                        ? 'text-red-400 bg-red-500/10'
+                                        : 'text-green-400 bg-green-500/10'
+                                        }`}>
+                                        {Number(order.net_profit) > 0 ? '+' : ''}Rs. {Number(order.net_profit).toFixed(2)}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {!isEditing && (

@@ -165,7 +165,7 @@ export const getOrders = async (req: Request, res: Response) => {
     checkAutoDelivery().catch(err => console.error('Background auto-delivery error', err));
 
     try {
-        const { status, search, startDate, endDate, shipping_method, page = 1, limit = 20 } = req.query;
+        const { status, search, startDate, endDate, shipping_method, page = 1, limit = 20, sortOrder = 'desc' } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
         const where: any = {};
@@ -176,12 +176,12 @@ export const getOrders = async (req: Request, res: Response) => {
 
         if (startDate && endDate) {
             where.created_at = {
-                gte: new Date(String(startDate) + 'T00:00:00.000Z'),
-                lte: new Date(String(endDate) + 'T23:59:59.999Z')
+                gte: new Date(String(startDate)),
+                lte: new Date(String(endDate))
             };
         } else if (startDate) {
             where.created_at = {
-                gte: new Date(String(startDate) + 'T00:00:00.000Z')
+                gte: new Date(String(startDate))
             };
         }
 
@@ -199,11 +199,14 @@ export const getOrders = async (req: Request, res: Response) => {
             ];
         }
 
+        // Validate sortOrder to prevent injection or invalid enum values
+        const validSortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+
         const [orders, total, stats] = await prisma.$transaction([
             prisma.order.findMany({
                 where,
                 include: { items: true },
-                orderBy: { created_at: 'desc' },
+                orderBy: { created_at: validSortOrder },
                 skip,
                 take: Number(limit)
             }),
@@ -249,7 +252,10 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
         let newStatus = status as PrismaOrderStatus;
 
         // Speed Post Logic: Skip DISPATCHED -> DELIVERED
-        if (newStatus === PrismaOrderStatus.DISPATCHED && (order.shipping_method as string) === 'Speed Post') {
+        // Only trigger this when moving forward from PENDING, not when reversing from DELIVERED.
+        if (newStatus === PrismaOrderStatus.DISPATCHED &&
+            order.status === PrismaOrderStatus.PENDING &&
+            (order.shipping_method as string) === 'Speed Post') {
             newStatus = PrismaOrderStatus.DELIVERED;
         }
 

@@ -108,9 +108,15 @@ const OrderCard = ({ order, onStatusUpdate, onDelete }: OrderCardProps) => {
                 {/* Footer: Financials & Actions */}
                 <div className="flex justify-between items-center   border-gray-50">
                     <div className="flex items-center gap-2">
-                        <span className="text-xl font-bold text-gray-900">
-                            Rs. {Number(order.total_selling_price).toLocaleString()}
-                        </span>
+                        {user?.role === 'STAFF' && order.shipping_method === 'Speed Post' ? (
+                            <span className="text-sm font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md border border-gray-100 italic">
+                                Speed Post
+                            </span>
+                        ) : (
+                            <span className="text-xl font-bold text-gray-900">
+                                Rs. {Number(order.total_selling_price).toLocaleString()}
+                            </span>
+                        )}
                         {user?.role === 'ADMIN' && !isDraft && (
                             <span className={`text-lg font-bold ${Number(order.net_profit) < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
                                 {Number(order.net_profit) > 0 ? '+' : ''}{Number(order.net_profit).toLocaleString()}

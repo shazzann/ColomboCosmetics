@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Truck, Calendar, Settings } from 'lucide-react';
+import { Search, Plus, Truck, Calendar, Settings, ArrowUp, ArrowDown } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { startOfDay, endOfDay, subDays, format } from 'date-fns';
+import { startOfDay, endOfDay, subDays } from 'date-fns';
 import api from '../api/client';
 import BottomNav from '../components/BottomNav';
 import OrderCard, { OrderStatus } from '../components/orders/OrderCard';
@@ -36,6 +36,9 @@ const Orders = () => {
     });
     const [dateFilterType, setDateFilterType] = useState(() => sessionStorage.getItem('orders_dateFilterType') || 'all');
     const [shippingMethod, setShippingMethod] = useState(() => sessionStorage.getItem('orders_shippingMethod') || 'ALL');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(() => {
+        return (sessionStorage.getItem('orders_sortOrder') as 'asc' | 'desc') || 'desc';
+    });
     const [showCustomDate, setShowCustomDate] = useState(false);
 
     // Tabs configuration
@@ -56,7 +59,8 @@ const Orders = () => {
         sessionStorage.setItem('orders_dateRange', JSON.stringify(dateRange));
         sessionStorage.setItem('orders_dateFilterType', dateFilterType);
         sessionStorage.setItem('orders_shippingMethod', shippingMethod);
-    }, [activeTab, search, dateRange, shippingMethod, dateFilterType]);
+        sessionStorage.setItem('orders_sortOrder', sortOrder);
+    }, [activeTab, search, dateRange, shippingMethod, dateFilterType, sortOrder]);
 
     // Persist orders data whenever it changes
     useEffect(() => {
@@ -85,7 +89,7 @@ const Orders = () => {
     useEffect(() => {
         // Background fetch to update data
         fetchOrders(false);
-    }, [activeTab, dateRange, shippingMethod]);
+    }, [activeTab, dateRange, shippingMethod, sortOrder]);
 
     // Debounced search effect
     useEffect(() => {
@@ -101,12 +105,12 @@ const Orders = () => {
         if (value === 'all') {
             setDateRange({ start: '', end: '' });
         } else if (value === 'today') {
-            const start = format(startOfDay(today), 'yyyy-MM-dd');
-            const end = format(endOfDay(today), 'yyyy-MM-dd');
+            const start = startOfDay(today).toISOString();
+            const end = endOfDay(today).toISOString();
             setDateRange({ start, end });
         } else if (value === 'week') {
-            const start = format(subDays(today, 7), 'yyyy-MM-dd');
-            const end = format(endOfDay(today), 'yyyy-MM-dd');
+            const start = startOfDay(subDays(today, 7)).toISOString();
+            const end = endOfDay(today).toISOString();
             setDateRange({ start, end });
         } else if (value === 'custom') {
             setShowCustomDate(true);
@@ -121,7 +125,8 @@ const Orders = () => {
                 status: 'ALL',
                 search: search,
                 shipping_method: shippingMethod,
-                limit: 1000 // Fetch large number to support client-side filtering
+                limit: 1000, // Fetch large number to support client-side filtering
+                sortOrder: sortOrder
             };
 
             if (dateRange.start) params.startDate = dateRange.start;
@@ -343,6 +348,13 @@ const Orders = () => {
                             </select>
                             <Calendar className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
                         </div>
+                        <button
+                            onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                            className="bg-white border border-gray-200 rounded-lg px-3 flex items-center justify-center text-gray-600 hover:bg-gray-50 focus:ring-2 focus:ring-pink-500 outline-none transition-colors"
+                            title={sortOrder === 'desc' ? 'Sort Ascending' : 'Sort Descending'}
+                        >
+                            {sortOrder === 'desc' ? <ArrowDown size={16} /> : <ArrowUp size={16} />}
+                        </button>
                         <div className="relative flex-1">
                             <select
                                 value={shippingMethod}
