@@ -108,6 +108,11 @@ const Orders = () => {
             const start = startOfDay(today).toISOString();
             const end = endOfDay(today).toISOString();
             setDateRange({ start, end });
+        } else if (value === 'yesterday') {
+            const yesterday = subDays(today, 1);
+            const start = startOfDay(yesterday).toISOString();
+            const end = endOfDay(yesterday).toISOString();
+            setDateRange({ start, end });
         } else if (value === 'week') {
             const start = startOfDay(subDays(today, 7)).toISOString();
             const end = endOfDay(today).toISOString();
@@ -343,6 +348,7 @@ const Orders = () => {
                             >
                                 <option value="all">All Dates</option>
                                 <option value="today">Today</option>
+                                <option value="yesterday">Yesterday</option>
                                 <option value="week">This Week</option>
                                 <option value="custom">Custom Range...</option>
                             </select>
