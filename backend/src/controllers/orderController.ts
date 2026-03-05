@@ -82,9 +82,11 @@ export const createOrder = async (req: Request, res: Response) => {
 
         // Use a transaction to create order and items
         const newOrder = await prisma.$transaction(async (tx: any) => {
-            const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-            const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-            const orderId = `ORD-${dateStr}-${randomSuffix}`;
+            // Count total existing orders to determine the next incremental ID
+            const totalOrders = await tx.order.count();
+            const nextSeq = totalOrders + 1;
+            const orderId = `ORD-${String(nextSeq).padStart(4, '0')}`;
+            console.log('[ORDER-ID-DEBUG] totalOrders:', totalOrders, 'nextSeq:', nextSeq, 'orderId:', orderId);
 
             const orderData: any = {
                 id: orderId,

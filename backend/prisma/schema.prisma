@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -9,33 +9,16 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum Role {
-  ADMIN
-  STAFF
-}
-
-enum OrderStatus {
-  DRAFT
-  PENDING
-  DISPATCHED
-  DELIVERED
-  RETURNED
-  CANCELLED
-}
-
-
-
 model User {
-  id            String      @id @default(uuid())
+  id            String     @id @default(uuid())
   name          String
-  email         String      @unique
+  email         String     @unique
   password_hash String
-  role          Role        @default(STAFF)
-  is_approved   Boolean     @default(false)
-  created_at    DateTime    @default(now())
-  
-  orders        Order[]     @relation("CreatedOrders")
+  role          Role       @default(STAFF)
+  created_at    DateTime   @default(now())
+  is_approved   Boolean    @default(false)
   audit_logs    AuditLog[]
+  orders        Order[]    @relation("CreatedOrders")
 
   @@map("users")
 }
@@ -45,66 +28,73 @@ model Product {
   name                  String
   cost_price            Decimal
   default_selling_price Decimal?
-  created_at           DateTime    @default(now())
-  updated_at           DateTime    @updatedAt // Fixed spacing or just updated
-
+  created_at            DateTime    @default(now())
+  updated_at            DateTime    @updatedAt
   order_items           OrderItem[]
 
   @@map("products")
 }
 
 model Order {
-  id                  String         @id
+  id                  String      @id
   customer_name       String
   mobile_number       String
   address             String
-  order_date          DateTime       @default(now())
-  status              OrderStatus    @default(PENDING)
-  shipping_method     String
+  order_date          DateTime    @default(now())
+  status              OrderStatus @default(PENDING)
   shipping_cost       Decimal
   total_selling_price Decimal
   total_cost_price    Decimal
   net_profit          Decimal
-  notes               String?
-  
   created_by_id       String
-  created_by          User           @relation("CreatedOrders", fields: [created_by_id], references: [id])
-  
-  created_at          DateTime       @default(now())
-  updated_at          DateTime       @updatedAt
-  
+  created_at          DateTime    @default(now())
+  updated_at          DateTime    @updatedAt
+  notes               String?
+  shipping_method     String
   items               OrderItem[]
-  
+  created_by          User        @relation("CreatedOrders", fields: [created_by_id], references: [id])
+
   @@map("orders")
 }
 
 model OrderItem {
   id               String   @id @default(uuid())
   order_id         String
-  order            Order    @relation(fields: [order_id], references: [id])
-  
   product_id       String?
-  product          Product? @relation(fields: [product_id], references: [id])
-  
-  product_name     String   // Snapshot
+  product_name     String
   quantity         Int
-  cost_price       Decimal  // Snapshot
-  selling_price    Decimal  // Snapshot
+  cost_price       Decimal
+  selling_price    Decimal
   total_item_value Decimal
-  
+  order            Order    @relation(fields: [order_id], references: [id])
+  product          Product? @relation(fields: [product_id], references: [id])
+
   @@map("order_items")
 }
 
 model AuditLog {
   id             String   @id @default(uuid())
   user_id        String
-  user           User     @relation(fields: [user_id], references: [id])
-  
   action         String
   target_id      String
   previous_value Json?
   new_value      Json?
   timestamp      DateTime @default(now())
-  
+  user           User     @relation(fields: [user_id], references: [id])
+
   @@map("audit_logs")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum OrderStatus {
+  PENDING
+  DISPATCHED
+  DELIVERED
+  RETURNED
+  CANCELLED
+  DRAFT
 }

@@ -81,7 +81,7 @@ const OrderCard = ({ order, onStatusUpdate, onDelete }: OrderCardProps) => {
             <div className="py-1 px-3">
                 {/* Header: ID & Status */}
                 <div className="flex justify-between items-center mb-0.5">
-                    <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-tight">#{order.id.slice(-5)}</span>
+                    <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-tight">#{order.id.replace(/^ORD-/, '')}</span>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border leading-none ${getStatusStyles(order.status)}`}>
                         {order.status}
                     </span>

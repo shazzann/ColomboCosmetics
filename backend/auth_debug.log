@@ -9,3 +9,10 @@
 [authorizeRole] URL: /api/orders/ORD-20260302-1189, User role: ADMIN, Allowed roles: ADMIN,STAFF
 [authorizeRole] URL: /api/orders/ORD-20260302-6194, User role: ADMIN, Allowed roles: ADMIN,STAFF
 [authorizeRole] URL: /api/orders/ORD-20260304-3069, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-20260304-9785, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-20260304-3964, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-20260304-6303, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-20260304-1215, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-20260304-4951, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-0145, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-0144, User role: ADMIN, Allowed roles: ADMIN,STAFF

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, Package, User, Truck, DollarSign, FileText, Edit2, Save, X, Plus, Minus, Trash2, Search, CheckCircle, RotateCcw, MessageCircle, StickyNote } from 'lucide-react';
+import { ArrowLeft, Package, User, Truck, DollarSign, FileText, Edit2, Save, X, Plus, Minus, Trash2, Search, CheckCircle, RotateCcw, MessageCircle, StickyNote, ChevronLeft, ChevronRight } from 'lucide-react';
 // import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import api from '../api/client';
@@ -27,6 +27,34 @@ const OrderDetails = () => {
     // New Edit Features State
     const [quickAddProducts, setQuickAddProducts] = useState<any[]>([]);
     const [weight, setWeight] = useState<number | ''>('');
+
+    const [prevOrderId, setPrevOrderId] = useState<string | null>(null);
+    const [nextOrderId, setNextOrderId] = useState<string | null>(null);
+
+    useEffect(() => {
+        const activeTab = sessionStorage.getItem('orders_activeTab') || 'ALL';
+        const savedOrders = sessionStorage.getItem('orders_data');
+        if (savedOrders) {
+            try {
+                const parsedOrders = JSON.parse(savedOrders);
+                const filteredOrders = parsedOrders.filter((o: any) => {
+                    if (activeTab === 'ALL' || activeTab === 'ORDERED_ITEMS') return true;
+                    return o.status === activeTab;
+                });
+
+                const currentIndex = filteredOrders.findIndex((o: any) => o.id === id);
+                if (currentIndex !== -1) {
+                    setPrevOrderId(currentIndex > 0 ? filteredOrders[currentIndex - 1].id : null);
+                    setNextOrderId(currentIndex < filteredOrders.length - 1 ? filteredOrders[currentIndex + 1].id : null);
+                } else {
+                    setPrevOrderId(null);
+                    setNextOrderId(null);
+                }
+            } catch (e) {
+                console.error("Error parsing orders data", e);
+            }
+        }
+    }, [id]);
 
     useEffect(() => {
         fetchOrderDetails();
@@ -270,7 +298,22 @@ Thank you for your order!`;
                         <ArrowLeft size={20} className="text-gray-600" />
                     </button>
                     <div>
-                        <h1 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        {(prevOrderId || nextOrderId) && (
+                            <div className="flex items-center gap-2 mb-0.5">
+                                {prevOrderId && (
+                                    <button onClick={() => navigate(`/orders/${prevOrderId}`)} className="text-[14px] font-bold text-gray-400 flex items-center hover:text-pink-500 uppercase tracking-wider transition-colors pt-1">
+                                        <ChevronLeft size={16} className="mr-0.5" /> Prev
+                                    </button>
+                                )}
+                                {prevOrderId && nextOrderId && <span className="text-gray-300 text-[10px] pt-1">|</span>}
+                                {nextOrderId && (
+                                    <button onClick={() => navigate(`/orders/${nextOrderId}`)} className="text-[14px] font-bold text-gray-400 flex items-center hover:text-pink-500 uppercase tracking-wider transition-colors pt-1">
+                                        Next <ChevronRight size={16} className="ml-0.5" />
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                        <h1 className={`${(prevOrderId || nextOrderId) ? 'text-base' : 'text-lg'} font-bold text-gray-800 flex items-center gap-2 leading-tight mt-0.5`}>
                             Order #{order.id.substring(4, 12)}...
                             <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
                                 order.status === 'DISPATCHED' ? 'bg-blue-100 text-blue-700' :

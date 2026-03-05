@@ -49,9 +49,11 @@ const createOrder = async (req, res) => {
         const net_profit = total_selling_price - total_cost_price;
         // Use a transaction to create order and items
         const newOrder = await client_1.default.$transaction(async (tx) => {
-            const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-            const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-            const orderId = `ORD-${dateStr}-${randomSuffix}`;
+            // Count total existing orders to determine the next incremental ID
+            const totalOrders = await tx.order.count();
+            const nextSeq = totalOrders + 1;
+            const orderId = `ORD-${String(nextSeq).padStart(4, '0')}`;
+            console.log('[ORDER-ID-DEBUG] totalOrders:', totalOrders, 'nextSeq:', nextSeq, 'orderId:', orderId);
             const orderData = {
                 id: orderId,
                 customer_name: customer_name || '',
@@ -124,7 +126,7 @@ const getOrders = async (req, res) => {
     // Lazy check for auto-delivery
     checkAutoDelivery().catch(err => console.error('Background auto-delivery error', err));
     try {
-        const { status, search, startDate, endDate, shipping_method, page = 1, limit = 20 } = req.query;
+        const { status, search, startDate, endDate, shipping_method, page = 1, limit = 20, sortOrder = 'desc' } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
         const where = {};
         if (status && status !== 'ALL') {
@@ -132,13 +134,13 @@ const getOrders = async (req, res) => {
         }
         if (startDate && endDate) {
             where.created_at = {
-                gte: new Date(String(startDate) + 'T00:00:00.000Z'),
-                lte: new Date(String(endDate) + 'T23:59:59.999Z')
+                gte: new Date(String(startDate)),
+                lte: new Date(String(endDate))
             };
         }
         else if (startDate) {
             where.created_at = {
-                gte: new Date(String(startDate) + 'T00:00:00.000Z')
+                gte: new Date(String(startDate))
             };
         }
         if (shipping_method && shipping_method !== 'ALL') {
@@ -153,11 +155,13 @@ const getOrders = async (req, res) => {
                 { address: { contains: searchStr, mode: 'insensitive' } }
             ];
         }
+        // Validate sortOrder to prevent injection or invalid enum values
+        const validSortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
         const [orders, total, stats] = await client_1.default.$transaction([
             client_1.default.order.findMany({
                 where,
                 include: { items: true },
-                orderBy: { created_at: 'desc' },
+                orderBy: { created_at: validSortOrder },
                 skip,
                 take: Number(limit)
             }),
@@ -198,7 +202,10 @@ const updateOrderStatus = async (req, res) => {
         }
         let newStatus = status;
         // Speed Post Logic: Skip DISPATCHED -> DELIVERED
-        if (newStatus === client_2.OrderStatus.DISPATCHED && order.shipping_method === 'Speed Post') {
+        // Only trigger this when moving forward from PENDING, not when reversing from DELIVERED.
+        if (newStatus === client_2.OrderStatus.DISPATCHED &&
+            order.status === client_2.OrderStatus.PENDING &&
+            order.shipping_method === 'Speed Post') {
             newStatus = client_2.OrderStatus.DELIVERED;
         }
         const newProfit = newStatus === client_2.OrderStatus.RETURNED
