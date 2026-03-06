@@ -18,7 +18,7 @@ const OrderedItemsTable: React.FC<OrderedItemsTableProps> = ({ orders, dateRange
 
         orders.forEach(order => {
             // Exclude Invalid Statuses for "Ordered Items" calculation
-            if (['RETURNED', 'CANCELLED', 'DRAFT'].includes(order.status)) return;
+            if (['RETURNED', 'CANCELLED', 'DRAFT','PENDING','DELIVERED'].includes(order.status)) return;
 
             order.items.forEach((item: any) => {
                 const productName = item.product_name || item.name;
