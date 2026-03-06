@@ -17,3 +17,9 @@
 [authorizeRole] URL: /api/orders/ORD-0145, User role: ADMIN, Allowed roles: ADMIN,STAFF
 [authorizeRole] URL: /api/orders/ORD-0144, User role: ADMIN, Allowed roles: ADMIN,STAFF
 [authorizeRole] URL: /api/orders/ORD-0157, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-0158, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-0157, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-20260306, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-20260306, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-0184, User role: ADMIN, Allowed roles: ADMIN,STAFF
+[authorizeRole] URL: /api/orders/ORD-0185, User role: ADMIN, Allowed roles: ADMIN,STAFF

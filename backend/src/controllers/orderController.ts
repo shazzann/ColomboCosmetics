@@ -82,11 +82,22 @@ export const createOrder = async (req: Request, res: Response) => {
 
         // Use a transaction to create order and items
         const newOrder = await prisma.$transaction(async (tx: any) => {
-            // Count total existing orders to determine the next incremental ID
-            const totalOrders = await tx.order.count();
-            const nextSeq = totalOrders + 1;
+            // Find the highest sequence number from existing orders
+            const allOrders = await tx.order.findMany({
+                where: { id: { startsWith: 'ORD-' } },
+                select: { id: true }
+            });
+            let maxSeq = 0;
+            for (const o of allOrders) {
+                const num = parseInt(o.id.replace('ORD-', ''), 10);
+                // Only consider valid sequential IDs (ignore corrupted date-like IDs)
+                if (!isNaN(num) && num <= 99999 && num > maxSeq) {
+                    maxSeq = num;
+                }
+            }
+            const nextSeq = maxSeq + 1;
             const orderId = `ORD-${String(nextSeq).padStart(4, '0')}`;
-            console.log('[ORDER-ID-DEBUG] totalOrders:', totalOrders, 'nextSeq:', nextSeq, 'orderId:', orderId);
+            console.log('[ORDER-ID-DEBUG] maxSeq:', maxSeq, 'nextSeq:', nextSeq, 'orderId:', orderId);
 
             const orderData: any = {
                 id: orderId,

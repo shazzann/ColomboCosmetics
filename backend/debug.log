@@ -1,0 +1,21 @@
+{
+  "body": {
+    "customer_name": "uygu",
+    "mobile_number": "65156",
+    "address": "651",
+    "shipping_method": "COD",
+    "shipping_cost": 354,
+    "notes": "651",
+    "status": "PENDING",
+    "items": [
+      {
+        "productId": "72eae41a-e262-4f7d-96aa-682a49c95b1a",
+        "name": "Aco 22ml ",
+        "quantity": 1,
+        "cost_price": 155,
+        "selling_price": 200
+      }
+    ]
+  },
+  "error": "PrismaClientKnownRequestError: \nInvalid `tx.order.create()` invocation in\nF:\\WORK\\Colombo Cosmetics\\backend\\src\\controllers\\orderController.ts:117:42\n\n  114     orderData.notes = String(notes);\n  115 }\n  116 \n→ 117 const order = await tx.order.create(\nForeign key constraint violated: `orders_created_by_id_fkey (index)`\n    at $n.handleRequestError (F:\\WORK\\Colombo Cosmetics\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:7315)\n    at $n.handleAndLogRequestError (F:\\WORK\\Colombo Cosmetics\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6623)\n    at $n.request (F:\\WORK\\Colombo Cosmetics\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:121:6307)\n    at async l (F:\\WORK\\Colombo Cosmetics\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:9633)\n    at async F:\\WORK\\Colombo Cosmetics\\backend\\src\\controllers\\orderController.ts:117:27\n    at async Proxy._transactionWithCallback (F:\\WORK\\Colombo Cosmetics\\backend\\node_modules\\@prisma\\client\\runtime\\library.js:130:8000)\n    at async createOrder (F:\\WORK\\Colombo Cosmetics\\backend\\src\\controllers\\orderController.ts:84:26)"
+}
