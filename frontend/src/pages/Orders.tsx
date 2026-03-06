@@ -248,7 +248,8 @@ const Orders = () => {
                             <div>
                                 <label className="text-xs font-bold text-gray-400 uppercase">Start Date</label>
                                 <input
-                                    type="date"
+                                    //date and time
+                                    type="datetime-local"
                                     value={dateRange.start}
                                     onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
                                     className="w-full mt-1 p-2 bg-gray-50 rounded-xl border border-gray-100 outline-none focus:ring-2 focus:ring-pink-500"
@@ -257,7 +258,7 @@ const Orders = () => {
                             <div>
                                 <label className="text-xs font-bold text-gray-400 uppercase">End Date</label>
                                 <input
-                                    type="date"
+                                    type="datetime-local"
                                     value={dateRange.end}
                                     onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
                                     className="w-full mt-1 p-2 bg-gray-50 rounded-xl border border-gray-100 outline-none focus:ring-2 focus:ring-pink-500"
