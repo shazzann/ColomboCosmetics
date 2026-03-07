@@ -49,11 +49,22 @@ const createOrder = async (req, res) => {
         const net_profit = total_selling_price - total_cost_price;
         // Use a transaction to create order and items
         const newOrder = await client_1.default.$transaction(async (tx) => {
-            // Count total existing orders to determine the next incremental ID
-            const totalOrders = await tx.order.count();
-            const nextSeq = totalOrders + 1;
+            // Find the highest sequence number from existing orders
+            const allOrders = await tx.order.findMany({
+                where: { id: { startsWith: 'ORD-' } },
+                select: { id: true }
+            });
+            let maxSeq = 0;
+            for (const o of allOrders) {
+                const num = parseInt(o.id.replace('ORD-', ''), 10);
+                // Only consider valid sequential IDs (ignore corrupted date-like IDs)
+                if (!isNaN(num) && num <= 99999 && num > maxSeq) {
+                    maxSeq = num;
+                }
+            }
+            const nextSeq = maxSeq + 1;
             const orderId = `ORD-${String(nextSeq).padStart(4, '0')}`;
-            console.log('[ORDER-ID-DEBUG] totalOrders:', totalOrders, 'nextSeq:', nextSeq, 'orderId:', orderId);
+            console.log('[ORDER-ID-DEBUG] maxSeq:', maxSeq, 'nextSeq:', nextSeq, 'orderId:', orderId);
             const orderData = {
                 id: orderId,
                 customer_name: customer_name || '',
@@ -66,6 +77,7 @@ const createOrder = async (req, res) => {
                 net_profit,
                 status: isDraft ? client_2.OrderStatus.DRAFT : client_2.OrderStatus.PENDING,
                 created_by_id: userId,
+                status_updated_at: new Date(),
                 items: {
                     create: orderItemsData
                 }
@@ -126,20 +138,21 @@ const getOrders = async (req, res) => {
     // Lazy check for auto-delivery
     checkAutoDelivery().catch(err => console.error('Background auto-delivery error', err));
     try {
-        const { status, search, startDate, endDate, shipping_method, page = 1, limit = 20, sortOrder = 'desc' } = req.query;
+        const { status, search, startDate, endDate, shipping_method, page = 1, limit = 20, sortOrder = 'desc', date_filter_by = 'created_at' } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
         const where = {};
         if (status && status !== 'ALL') {
             where.status = status;
         }
+        const dateField = date_filter_by === 'status_updated_at' ? 'status_updated_at' : 'created_at';
         if (startDate && endDate) {
-            where.created_at = {
+            where[dateField] = {
                 gte: new Date(String(startDate)),
                 lte: new Date(String(endDate))
             };
         }
         else if (startDate) {
-            where.created_at = {
+            where[dateField] = {
                 gte: new Date(String(startDate))
             };
         }
@@ -161,7 +174,7 @@ const getOrders = async (req, res) => {
             client_1.default.order.findMany({
                 where,
                 include: { items: true },
-                orderBy: { created_at: validSortOrder },
+                orderBy: { [dateField]: validSortOrder },
                 skip,
                 take: Number(limit)
             }),
@@ -211,12 +224,16 @@ const updateOrderStatus = async (req, res) => {
         const newProfit = newStatus === client_2.OrderStatus.RETURNED
             ? -Number(order.shipping_cost)
             : Number(order.total_selling_price) - Number(order.total_cost_price);
+        const updateData = {
+            status: newStatus,
+            net_profit: newProfit
+        };
+        if (newStatus !== order.status) {
+            updateData.status_updated_at = new Date();
+        }
         const updatedOrder = await client_1.default.order.update({
             where: { id },
-            data: {
-                status: newStatus,
-                net_profit: newProfit
-            }
+            data: updateData
         });
         // Create audit log
         await client_1.default.auditLog.create({
@@ -361,6 +378,7 @@ const updateOrder = async (req, res) => {
                     total_selling_price,
                     total_cost_price,
                     net_profit,
+                    ...(newStatus !== existingOrder.status ? { status_updated_at: new Date() } : {}),
                     // updated_at is auto-handled by Prisma
                     items: {
                         create: orderItemsData

@@ -49,6 +49,7 @@ model Order {
   created_by_id       String
   created_at          DateTime    @default(now())
   updated_at          DateTime    @updatedAt
+  status_updated_at   DateTime?   @default(now())
   notes               String?
   shipping_method     String
   items               OrderItem[]

@@ -101,6 +101,7 @@ const Orders = () => {
 
     const handleDateFilterChange = (value: string) => {
         setDateFilterType(value);
+        setOrders([]); // Clear stale data before new fetch
         const today = new Date();
         if (value === 'all') {
             setDateRange({ start: '', end: '' });
@@ -127,11 +128,12 @@ const Orders = () => {
         try {
             // Always fetch ALL orders (up to 1000) for current filters to enable client-side tab switching
             const params: any = {
-                status: 'ALL',
+                status: (activeTab === 'ORDERED_ITEMS' || activeTab === 'ALL') ? 'ALL' : activeTab,
                 search: search,
                 shipping_method: shippingMethod,
                 limit: 1000, // Fetch large number to support client-side filtering
-                sortOrder: sortOrder
+                sortOrder: sortOrder,
+                date_filter_by: (activeTab === OrderStatus.DISPATCHED || activeTab === OrderStatus.DELIVERED) ? 'status_updated_at' : 'created_at'
             };
 
             if (dateRange.start) params.startDate = dateRange.start;
@@ -382,7 +384,14 @@ const Orders = () => {
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id as TabType)}
+                                onClick={() => {
+                                    if (activeTab !== tab.id) {
+                                        // Clear orders to force loading skeleton if we are switching to/from a tab with different date semantics
+                                        // or simply clear it always to ensure accuracy
+                                        setOrders([]);
+                                        setActiveTab(tab.id as TabType);
+                                    }
+                                }}
                                 className={`px-4 py-1.5 rounded-full text-[10px] font-bold whitespace-nowrap transition-all ${activeTab === tab.id
                                     ? 'bg-pink-500 text-white shadow-md shadow-pink-200'
                                     : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'

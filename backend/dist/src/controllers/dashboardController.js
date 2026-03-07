@@ -12,13 +12,13 @@ const getDashboardStats = async (req, res) => {
         const dateFilter = {};
         if (startDate && endDate) {
             dateFilter.created_at = {
-                gte: new Date(String(startDate) + 'T00:00:00.000Z'),
-                lte: new Date(String(endDate) + 'T23:59:59.999Z')
+                gte: new Date(String(startDate)),
+                lte: new Date(String(endDate))
             };
         }
         else if (startDate) {
             dateFilter.created_at = {
-                gte: new Date(String(startDate) + 'T00:00:00.000Z')
+                gte: new Date(String(startDate))
             };
         }
         // 1. Total Sales (Realized Sales: Not Returned, Not Cancelled, Not Draft)
@@ -45,12 +45,43 @@ const getDashboardStats = async (req, res) => {
                 net_profit: true
             }
         });
-        // 3. Status Counts (Include Drafts?) User might want to see how many drafts.
+        // 3. Status Counts
+        // Non-dispatched/delivered statuses filtered by created_at
         const statusCounts = await client_1.default.order.groupBy({
             by: ['status'],
-            where: dateFilter,
+            where: {
+                ...dateFilter,
+                status: {
+                    notIn: [client_2.OrderStatus.DISPATCHED, client_2.OrderStatus.DELIVERED]
+                }
+            },
             _count: {
                 id: true
+            }
+        });
+        // Dispatched & Delivered filtered by status_updated_at
+        const statusUpdatedDateFilter = {};
+        if (startDate && endDate) {
+            statusUpdatedDateFilter.status_updated_at = {
+                gte: new Date(String(startDate)),
+                lte: new Date(String(endDate))
+            };
+        }
+        else if (startDate) {
+            statusUpdatedDateFilter.status_updated_at = {
+                gte: new Date(String(startDate))
+            };
+        }
+        const dispatchedCount = await client_1.default.order.count({
+            where: {
+                status: client_2.OrderStatus.DISPATCHED,
+                ...statusUpdatedDateFilter
+            }
+        });
+        const deliveredCount = await client_1.default.order.count({
+            where: {
+                status: client_2.OrderStatus.DELIVERED,
+                ...statusUpdatedDateFilter
             }
         });
         // 4. Outstanding Revenue (Pending + Dispatched) -> Cash to be collected
@@ -76,8 +107,8 @@ const getDashboardStats = async (req, res) => {
             statusCounts: {
                 DRAFT: formattedStatusCounts[client_2.OrderStatus.DRAFT] || 0,
                 PENDING: formattedStatusCounts[client_2.OrderStatus.PENDING] || 0,
-                DISPATCHED: formattedStatusCounts[client_2.OrderStatus.DISPATCHED] || 0,
-                DELIVERED: formattedStatusCounts[client_2.OrderStatus.DELIVERED] || 0,
+                DISPATCHED: dispatchedCount || 0,
+                DELIVERED: deliveredCount || 0,
                 RETURNED: formattedStatusCounts[client_2.OrderStatus.RETURNED] || 0,
                 CANCELLED: formattedStatusCounts[client_2.OrderStatus.CANCELLED] || 0,
             },

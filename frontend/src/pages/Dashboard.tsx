@@ -52,7 +52,9 @@ const Dashboard = () => {
 
     const handleCustomDateSubmit = () => {
         if (customStart && customEnd) {
-            fetchStats(customStart, customEnd);
+            const start = startOfDay(new Date(customStart)).toISOString();
+            const end = endOfDay(new Date(customEnd)).toISOString();
+            fetchStats(start, end);
             setFilterLabel(`${customStart} to ${customEnd}`);
             setShowCustomPicker(false);
         }
@@ -97,9 +99,9 @@ const Dashboard = () => {
 
     useEffect(() => {
         // Initial load: Last 30 Days
-        const end = new Date();
-        const start = subDays(end, 30);
-        fetchStats(format(start, 'yyyy-MM-dd'), format(end, 'yyyy-MM-dd'));
+        const end = endOfDay(new Date());
+        const start = startOfDay(subDays(end, 30));
+        fetchStats(start.toISOString(), end.toISOString());
     }, []);
 
     // Close dropdown when clicking outside
@@ -152,7 +154,7 @@ const Dashboard = () => {
         }
 
         if (start && end) {
-            fetchStats(format(start, 'yyyy-MM-dd'), format(end, 'yyyy-MM-dd'));
+            fetchStats(startOfDay(start).toISOString(), endOfDay(end).toISOString());
             setFilterLabel(label);
         }
         setShowFilterMenu(false);

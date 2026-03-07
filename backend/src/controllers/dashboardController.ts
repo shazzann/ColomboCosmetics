@@ -10,12 +10,12 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         const dateFilter: any = {};
         if (startDate && endDate) {
             dateFilter.created_at = {
-                gte: new Date(String(startDate) + 'T00:00:00.000Z'),
-                lte: new Date(String(endDate) + 'T23:59:59.999Z')
+                gte: new Date(String(startDate)),
+                lte: new Date(String(endDate))
             };
         } else if (startDate) {
             dateFilter.created_at = {
-                gte: new Date(String(startDate) + 'T00:00:00.000Z')
+                gte: new Date(String(startDate))
             };
         }
 
@@ -45,12 +45,45 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             }
         });
 
-        // 3. Status Counts (Include Drafts?) User might want to see how many drafts.
+        // 3. Status Counts
+        // Non-dispatched/delivered statuses filtered by created_at
         const statusCounts = await prisma.order.groupBy({
             by: ['status'],
-            where: dateFilter,
+            where: {
+                ...dateFilter,
+                status: {
+                    notIn: [PrismaOrderStatus.DISPATCHED, PrismaOrderStatus.DELIVERED]
+                }
+            },
             _count: {
                 id: true
+            }
+        });
+
+        // Dispatched & Delivered filtered by status_updated_at
+        const statusUpdatedDateFilter: any = {};
+        if (startDate && endDate) {
+            statusUpdatedDateFilter.status_updated_at = {
+                gte: new Date(String(startDate)),
+                lte: new Date(String(endDate))
+            };
+        } else if (startDate) {
+            statusUpdatedDateFilter.status_updated_at = {
+                gte: new Date(String(startDate))
+            };
+        }
+
+        const dispatchedCount = await prisma.order.count({
+            where: {
+                status: PrismaOrderStatus.DISPATCHED,
+                ...statusUpdatedDateFilter
+            }
+        });
+
+        const deliveredCount = await prisma.order.count({
+            where: {
+                status: PrismaOrderStatus.DELIVERED,
+                ...statusUpdatedDateFilter
             }
         });
 
@@ -79,8 +112,8 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             statusCounts: {
                 DRAFT: formattedStatusCounts[PrismaOrderStatus.DRAFT] || 0,
                 PENDING: formattedStatusCounts[PrismaOrderStatus.PENDING] || 0,
-                DISPATCHED: formattedStatusCounts[PrismaOrderStatus.DISPATCHED] || 0,
-                DELIVERED: formattedStatusCounts[PrismaOrderStatus.DELIVERED] || 0,
+                DISPATCHED: dispatchedCount || 0,
+                DELIVERED: deliveredCount || 0,
                 RETURNED: formattedStatusCounts[PrismaOrderStatus.RETURNED] || 0,
                 CANCELLED: formattedStatusCounts[PrismaOrderStatus.CANCELLED] || 0,
             },

@@ -47,9 +47,9 @@ const DeliveryLabel = () => {
     const totalAmount = Number(order.total_selling_price) + Number(order.shipping_cost);
 
     return (
-        <div className="bg-white min-h-screen p-4 text-black font-sans max-w-[105mm] mx-auto print:max-w-none print:mx-0 print:p-0">
+        <div className="bg-white min-h-screen p-4 text-black font-sans max-w-[148.5mm] mx-auto print:max-w-none print:mx-0 print:p-0">
             {/* Label Container - A6 size approx (105mm x 148mm) or 4x6" */}
-            <div className="border-2 border-black w-full aspect-[105/148] flex flex-col relative print:w-full print:aspect-auto print:h-screen print:border-none">
+            <div className="border-2 border-black w-full aspect-[148.5/210] flex flex-col relative print:w-full print:aspect-auto print:h-screen print:border-none">
 
                 {/* Header (Store Info) */}
                 <div className="border-b-2 border-black p-4 flex items-center justify-between">

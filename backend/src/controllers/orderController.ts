@@ -111,6 +111,7 @@ export const createOrder = async (req: Request, res: Response) => {
                 net_profit,
                 status: isDraft ? PrismaOrderStatus.DRAFT : PrismaOrderStatus.PENDING,
                 created_by_id: userId,
+                status_updated_at: new Date(),
                 items: {
                     create: orderItemsData
                 }
@@ -178,7 +179,7 @@ export const getOrders = async (req: Request, res: Response) => {
     checkAutoDelivery().catch(err => console.error('Background auto-delivery error', err));
 
     try {
-        const { status, search, startDate, endDate, shipping_method, page = 1, limit = 20, sortOrder = 'desc' } = req.query;
+        const { status, search, startDate, endDate, shipping_method, page = 1, limit = 20, sortOrder = 'desc', date_filter_by = 'created_at' } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
         const where: any = {};
@@ -187,13 +188,15 @@ export const getOrders = async (req: Request, res: Response) => {
             where.status = status as PrismaOrderStatus;
         }
 
+        const dateField = date_filter_by === 'status_updated_at' ? 'status_updated_at' : 'created_at';
+
         if (startDate && endDate) {
-            where.created_at = {
+            where[dateField] = {
                 gte: new Date(String(startDate)),
                 lte: new Date(String(endDate))
             };
         } else if (startDate) {
-            where.created_at = {
+            where[dateField] = {
                 gte: new Date(String(startDate))
             };
         }
@@ -219,7 +222,7 @@ export const getOrders = async (req: Request, res: Response) => {
             prisma.order.findMany({
                 where,
                 include: { items: true },
-                orderBy: { created_at: validSortOrder },
+                orderBy: { [dateField]: validSortOrder },
                 skip,
                 take: Number(limit)
             }),
@@ -276,12 +279,18 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
             ? -Number(order.shipping_cost)
             : Number(order.total_selling_price) - Number(order.total_cost_price);
 
+        const updateData: any = {
+            status: newStatus,
+            net_profit: newProfit
+        };
+
+        if (newStatus !== order.status) {
+            updateData.status_updated_at = new Date();
+        }
+
         const updatedOrder = await prisma.order.update({
             where: { id },
-            data: {
-                status: newStatus,
-                net_profit: newProfit
-            }
+            data: updateData
         });
 
         // Create audit log
@@ -464,6 +473,7 @@ export const updateOrder = async (req: Request, res: Response) => {
                     total_selling_price,
                     total_cost_price,
                     net_profit,
+                    ...(newStatus !== existingOrder.status ? { status_updated_at: new Date() } : {}),
                     // updated_at is auto-handled by Prisma
                     items: {
                         create: orderItemsData
